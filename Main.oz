@@ -25,7 +25,7 @@ define
    /*
     * List<int> dont chaque element est le nombre de tour avant que le joueur puisse replonger (ordre correspond a l'Id)
     * SurfaceJoueursList = [2 -1 1 0 ...] : 
-    * -1 = En plonge
+    * -1 = En plonge (Inutile car on ne sait pas quand un sous-marin plonge)
     *  0 = Peut plonger
     *  1 = Un tour restant
     *  2 = ...
@@ -191,11 +191,28 @@ define
          case PPL
          of PlayerPort|T then % Actions pour un tour d'un joueur
 
-            {System.show '---------- Debut du tour joueur ----------'}
+            {System.show '-------------------- Debut du tour joueur'}
 
-            %%%%  -- Pt.0 --  %%% Si le joueur est mort, on skip
+            %%%%  -- Pt.0 --  %%%
+            /*
+             * Verifie si il ne reste qu'un joueur.
+             * Sinon, verifie si le joueur est mort.
+             * Si oui, on passe au joueur prochain
+             */
 
-            {System.show '--------------- Pt.0'}
+            local
+               Vivant = {SumList VJL}
+            in
+               if(Vivant == 1) then
+
+                  {System.show '-------------------- Partie terminee '}
+                  {TBTActions nil SJL VJL 1}
+
+               end
+
+            end
+
+            {System.show '-------------------- Pt.0'}
 
             local
                DeadAnswer
@@ -208,8 +225,12 @@ define
             end
 
             %%%%  -- Pt.1 --  %%%
+            /*
+             * Verifie si le sous-marin peut jouer (s'il n'est plus a la surface).
+             * Si le sous-marin est a la surface : Pt.9.
+             */
 
-            {System.show '--------------- Pt.1'}
+            {System.show '-------------------- Pt.1'}
 
             local
                NiveauSurface = {List.nth SJL Id}
@@ -220,16 +241,24 @@ define
             end
 
             %%%%  -- Pt.2 --  %%%
+            /*
+             * S'il s'agit du premier tour, ou si au tour precedent le sous-marin a fait surface : 
+             * Envoie le message de plongee au sous-marin
+             */
 
-            {System.show '--------------- Pt.2'}
+            {System.show '-------------------- Pt.2'}
 
             if({List.nth SJL Id} == 0) then
                {Send PlayerPort dive}
             end
 
             %%%%  -- Pt.3 --  %%%
+            /*
+             * Demande au sous-marin de choisir sa direction.
+             * Si la direction n'est pas surface : Pt.5
+             */
 
-            {System.show '--------------- Pt.3'}
+            {System.show '-------------------- Pt.3'}
 
             local
                MoveId MovePos MoveDir
@@ -240,29 +269,37 @@ define
                {Wait MoveDir}
 
                %%%%  -- Pt.4 --  %%%
+               /*
+                * La surface a ete choisie, le tour du joueur s'arrete et est compte comme le premier tour passe a la surface.
+                * L'informations que ce joueur a fait surface est diffusee par la radio.
+                * Le sous-marin reste un total de tours Input.turnSurface a la surface avant de continuer
+                */
 
-               {System.show '--------------- Pt.4'}
+               {System.show '-------------------- Pt.4'}
 
-               local
-                  NiveauSurface = {List.nth SJL Id}
-               in
-                  if(MoveDir == surface) then
-                     {Radio saySurface(MoveId)}
-                     {TBTActions T {AdjoinListAt SJL Id (NiveauSurface-1)} VJL Id+1}
-                  end
+               if(MoveDir == surface) then
+                  {Radio saySurface(MoveId)}
+                  {TBTActions T {AdjoinListAt SJL Id (Input.turnSurface-1)} VJL Id+1}
                end
 
                %%%%  -- Pt.5 --  %%%
+               /*
+                * La direction choisie est diffusee par la radio.
+                */
 
-               {System.show '--------------- Pt.5'}
+               {System.show '-------------------- Pt.5'}
                
                {Radio sayMove(MoveId MoveDir)}
 
             end
 
             %%%%  -- Pt.6 --  %%%
+            /*
+             * Le sous-marin est desormais autorise a charger un objet.
+             * Si la reponse contient des informations sur un nouveau item, l'information est diffusee par la radio.
+             */
 
-            {System.show '--------------- Pt.6'}
+            {System.show '-------------------- Pt.6'}
 
             local
                ChargeId ChargeItem
@@ -277,8 +314,12 @@ define
             end
 
             %%%%  -- Pt.7 --  %%%
+            /*
+             * Le sous-marin est desormais autorise a tirer un objet.
+             * Si la reponse contient des informations sur un objet tire l'information est diffusee par la radio.
+             */
 
-            {System.show '--------------- Pt.7'}
+            {System.show '-------------------- Pt.7'}
 
             local
                FireId FireItem
@@ -290,12 +331,12 @@ define
                case FireItem
                of mine(Position) then 
 
-                  {System.show '------------------ Pt.7 : Mine'} 
+                  {System.show '-------------------- Pt.7 : Mine'} 
 
                   {Radio sayMinePlaced(FireId)}
                [] missile(Position) then
 
-                  {System.show '------------------ Pt.7 : Missile'}   
+                  {System.show '-------------------- Pt.7 : Missile'}   
 
                   for Port in PlayerPortList do
                      local
@@ -306,11 +347,16 @@ define
                         if(MissileMessage \= null) then 
                            {Radio MissileMessage}
                         end
+
+                        %case MissileMessage
+                        %of sayDeath(id(ActualColor ActualId ActualName)) then
+                        %   {TBTActions T {AdjoinListAt SJL Id (Input.turnSurface-1)} VJL Id+1} Mais je peux pas reappeler la fct ici vu qu'il reste des Pts... 
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Ici je dois mettre a jour VJL 
                      end
                   end
                [] drone(Dim Num) then % drone(row <x>) / drone(column <y>)
 
-                  {System.show '------------------ Pt.7 : Drone'} 
+                  {System.show '-------------------- Pt.7 : Drone'} 
 
                   for Port in PlayerPortList do
                      local
@@ -325,7 +371,7 @@ define
                   end
                [] sonar then 
 
-                  {System.show '------------------ Pt.7 : Sonar'} 
+                  {System.show '-------------------- Pt.7 : Sonar'} 
 
                   for Port in PlayerPortList do
                      local
@@ -340,14 +386,18 @@ define
                   end
                else % null ou autre 
 
-                  {System.show '------------------ Pt.7 : Pas de tir'} % Pas d'item tire
+                  {System.show '-------------------- Pt.7 : Pas de tir'} % Pas d'item tire
 
                end
             end
 
-            %%%%  -- Pt.8 --  %%% 
+            %%%%  -- Pt.8 --  %%%
+            /*
+             * Le sous-marin est desormais autorise a faire exploser une mine.
+             * Si la reponse contient des informations sur l'explosion une mine, l'information est diffusee par la radio.
+             */
 
-            {System.show '--------------- Pt.8'}
+            {System.show '-------------------- Pt.8'}
 
             local
                MineId MinePosition
@@ -366,41 +416,50 @@ define
                         if(MineMessage \= null) then 
                            {Radio MineMessage}
                         end
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Ici je dois mettre a jour VJL
                      end
                   end
                end
             end
 
             %%%%  -- Pt.9 --  %%%
+            /*
+             * Le tour est termine pour ce sous-marin
+             */
 
-            {System.show '--------------- Pt.9'}
-            {System.show '---------- Fin du tour joueur ----------'}
+            {System.show '-------------------- Pt.9'}
+            {System.show '-------------------- Fin du tour joueur'}
 
             {TBTActions T SJL VJL Id+1} % Recursion du tour pour le prochain joueur
 
          else
 
-         local
-            Vivant = {SumList SJL}
-         in
-            if(Vivant == 1) then
+            local
+               Vivant = {SumList VJL}
+            in
+               if(Vivant == 1) then
 
-               {System.show '--- Partie termine '}
+                  {System.show '-------------------- Fermeture de la partie'}
 
-               skip
-            else
+               else
 
-               {System.show '------ Fin du Round ------'}
-               {Wait Vivant}
-               {System.show '%%% Nombre de joueurs vivant : '}
-               {System.show Vivant}
-               {System.show '------ Lancement nouveau Round ------'}
+                  {System.show '-------------------- Fin du Round'}
 
-               {TBTActions PlayerPortList SJL VJL 1} % Chaque jouer a joue, nouveau round
+                  {Wait Vivant}
+                  {Wait PPL}
+                  {Wait SJL}
+                  {Wait VJL}
+                  {System.show '-------------------- Recaptilulatif du Round : Vivants, PPL, SJL, VJL'}
+                  {System.show Vivant}
+                  {System.show PPL}
+                  {System.show SJL}
+                  {System.show VJL}
+
+                  {System.show '-------------------- Lancement nouveau Round'}
+
+                  {TBTActions PlayerPortList SJL VJL 1} % Chaque jouer a joue, nouveau round
+               end
             end
-         end
-
-
 
          end
       end
@@ -425,18 +484,24 @@ in
     *************************************/
 
    % Cree l'interface graphique
-   {System.show '- Lancement de la GUI -'}
+   {System.show '-------------------- Lancement de la GUI'}
    GUIP = {GUI.portWindow} % Recuperation du port de l'interface
    {Send GUIP buildWindow} % Lancement de l'interface
 
-   {System.show '- Initialisations du jeux -'}
+   {System.show '-------------------- Initialisations du jeux'}
    PlayerPortList = {InitPlayerPortList} % Initialise la liste des ports des joueurs dans l'ordre des Id
    SurfaceJoueursList = {InitSurfaceJoueursList} % Initialise le tuple des etats des joueurs dans l'ordre des Ids
    VieJoueursList = {InitVieJoueursList}
+
+   {System.show '- Valeur de PPL, SJL, VJL -'}
+   {System.show PlayerPortList}
+   {System.show SurfaceJoueursList}
+   {System.show VieJoueursList}
+
    {SetUpPlayers} % Demande a chaque joueur de choisir un point de depart
 
    if(Input.isTurnByTurn) then
-      {System.show '--- Lancement de la partie en TPT ---'}
+      {System.show '-------------------- Lancement de la partie en TPT'}
       {StartTBT}
    else
       {StartSim}
@@ -462,7 +527,7 @@ end
 
    Dans le Pt.8, c'est la main qui doit verifier si le joueur a deja place une mine ? Ou j'envoi et le joueur est honnete
  
-   Trouver un moyen de finir la boucle de TPT ? Quand il ne reste plus qu'un joueur en jeux
+   Joueur sous l'eau doit avoir surface ~1 \= -1
  
  
 */
