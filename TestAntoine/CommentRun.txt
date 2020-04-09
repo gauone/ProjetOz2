@@ -1,0 +1,4 @@
+1) Ouvrire Terminal
+2) Passer le disque D avec : d:
+3) Aller dans le bon dossier : cd D:\Utilisateurs\Antoine\Documents\GitHub\ProjetOz2
+4) Compiler : ozc -c Input.oz PlayerManager.oz Player.oz GUI.oz Main.oz

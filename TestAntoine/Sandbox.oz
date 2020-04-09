@@ -175,3 +175,88 @@ thread {Browse S2} end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+/*
+ * Renvoi une liste egale a List ou l'element a l'indice Ind a ete modifie par Elem
+ */
+declare
+fun{AdjoinListAt List Ind Elem}
+    case List
+    of H|T then
+        if(Ind == 1) then 
+            Elem|T
+        else
+            H|{AdjoinListAt T Ind-1 Elem}
+        end
+    [] nil then
+        nil
+    end
+end
+
+local
+    L1 = [1 2]
+    L
+in
+    thread {Browse L} end
+    thread L = {AdjoinListAt L1 3 3} end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+declare 
+
+Players = [1 2 3]
+
+/*
+ * Players -> Input.players
+ *
+ * Initialise la liste de vie des jouers (ordre Id)
+ */
+fun{InitVieJoueursList}
+    fun{IVJLrec P}
+        case P
+        of H|T then
+            1|{IVJLrec T}
+        else
+            nil
+        end
+    end
+in
+    {IVJLrec Players}
+end
+
+local
+    L
+in
+    thread {Browse L} end
+    thread L = {InitVieJoueursList} end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+declare
+/*
+ * Renvoi la somme des elements de List<int>
+ */
+fun{SumList List}
+    fun{SLacc L A}
+        case L
+        of H|T then 
+            {SLacc T A+H}
+        [] nil then 
+            A
+        end
+    end
+in
+    {SLacc List 0}
+end
+
+local 
+    List = [1 2 3 4 5]
+in
+    {Browse {SumList List}}
+end
