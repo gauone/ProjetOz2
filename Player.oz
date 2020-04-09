@@ -386,8 +386,4 @@ Demander a Antoine ce qu est ce fireMine ;p -> on choisi quand ca explose?
 Demander a Antoine si c est lui qui decide quand je suis mort… Genre si je dois compter mes damage
     comme je fais actuellement (dans treatStream), ou j attends le msg sayDeat(ID) avec mon ID ;p
 Vérifier de source autre qu un etudiant inconnu que type drone est bien drone(row <unXChoisi>)
-Dire a Antoine que pour le moment, je concidere drone comme drone(row <unXChoisi>) et pas avec un colon
-    comme lui fait.
-Discuter avec fourmi1 des <id> que je renvoie qui sont pas le meme type que les <idnum>
-    (apres un petit check je crois que c est bon pour le moment mais faut en parler)
 */
