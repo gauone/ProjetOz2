@@ -1,6 +1,8 @@
 functor
 import
     Input
+    System %ajout de moi
+    OS %ajout de moi
 export
     portPlayer:StartPlayer
 define
@@ -230,7 +232,7 @@ in
     %la fct return AIMemory!
     %fct appellee que si je fais le AI
     fun {SayMove ID Direction Charact AIMemory}
-        if ID == Charact.identite then {Show sayMoveDeMoiMeme(Direction)} AIMemory
+        if ID == Charact.identite then {System.show sayMoveDeMoiMeme(Direction)} AIMemory
         else
             local
                 Connu = {Arity AIMemory.posEnnemi}
@@ -299,7 +301,7 @@ in
 
     % Efface le joueur de la mémoire de l AI
     fun {SayDeath ID AIMemory Charact}
-        if ID == Charact.identite then {Show jeRecoisLInfoQueJeSuisMort(ID)} AIMemory
+        if ID == Charact.identite then {System.show jeRecoisLInfoQueJeSuisMort(ID)} AIMemory
         else
             local
                 Connu = {List.append {Arity AIMemory.posEnnemi} {Arity AIMemory.lifeEnnemi}}
@@ -329,7 +331,7 @@ in
             case H
             of initPosition(ID Position) then {TreatStream T AIMemory {InitPosition ID Position Charact}}
             [] move(ID Position Direction) then {TreatStream T AIMemory {Move ID Position Direction Charact}}
-            [] dive then {TreatStream T AIMemory {adjoinAt Charact divePermission true}}%autorise a nouveau a plonger
+            [] dive then {TreatStream T AIMemory {Record.adjoinAt Charact divePermission true}}%autorise a nouveau a plonger
             [] chargeItem(ID KindItem) then {TreatStream T AIMemory {ChargeItem ID KindItem Charact}}
             [] fireItem(ID KindFire) then {TreatStream T AIMemory {FireItem ID KindFire Charact}}
             [] fireMine(ID Mine) then {TreatStream T AIMemory {FireMine ID Mine Charact}}
@@ -352,7 +354,7 @@ in
             [] sayPassingDrone(Drone ID Answer)then {SayPassingDrone Drone ID Answer Charact} {TreatStream T AIMemory Charact}
             [] sayPassingSonar(ID Answer) then {SayPassingSonar ID Answer Charact} {TreatStream T AIMemory Charact}
             end
-        [] nil then {Show 'Player s Stream ended -> see Player file'}
+        [] nil then {System.show 'Player s Stream ended -> see Player file'}
         else raise iLegalOptionExceptionInPaylerStream(Stream.1) end
         end
     end
