@@ -521,3 +521,27 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+declare
+
+Arg = 3
+
+proc{GiveZero}
+    proc{T A}
+        if(A > 0) then
+            {Browse '--- Decremente'}
+            {T (A-1)}
+        else
+            {Browse 'Zombie expression ZZZzzz'}
+        end
+    end
+in
+    {T Arg}
+    {Browse 'Get Zero'}
+end
+
+{GiveZero}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
