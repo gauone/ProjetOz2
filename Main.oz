@@ -508,14 +508,6 @@ define
 
                            {TBTActions T SJL SubVJLMine Id+1} % Recursion du tour pour le prochain joueur
 
-
-
-
-
-
-
-
-
                         end                        
                      end            
                   end
