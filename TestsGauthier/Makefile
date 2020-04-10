@@ -3,7 +3,7 @@ files = ../Input.oz ../PlayerManager.oz ../Player.oz ../GUI.oz ../Main.oz Fichie
 build : $(files)
 	/Applications/Mozart2.app/Contents/Resources/bin/ozc -c ../Input.oz ../PlayerManager.oz ../Player.oz ../GUI.oz ../Main.oz
 
-run : Main.ozf
+run : $(files)
 	build
 	/Applications/Mozart2.app/Contents/Resources/bin/ozengine Main.ozf
 
