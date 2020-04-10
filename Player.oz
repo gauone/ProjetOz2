@@ -33,9 +33,12 @@ in
     /*Retourne le nouveau record apres avoir bind ID et Pos a leur valeurs.
     * Pos est une position ou il y a de l eau!*/
     fun {InitPosition ID Pos Charact}
-        ID = Charact.identite
-        Pos={GeneratePosition}
-        {Record.adjoinAt Charact position Pos}%retourne le nouveau record
+        if Charact.damage >= Input.maxDamage then ID = null
+        else
+            ID = Charact.identite
+            Pos={GeneratePosition}
+            {Record.adjoinAt Charact position Pos}%retourne le nouveau record
+        end
     end
 
 
@@ -83,30 +86,33 @@ in
     % Fonction qui choisit la direction a prendre, ajoute la derniere position a passage et rend une nouvelle position
     % Random dans un premier temps ;p /!\j'ajoute a passage la position precedente seulement
     fun {Move ID Position Direction Charact}
-        if Charact.divePermission then
-            ID = Charact.identite
-            local
-                Absi = Charact.position.x
-                Ord = Charact.position.y
-                Possibles = {PossiblesDir Absi Ord Charact.passage}%une liste contenant les directions
-                DirChoisie %celle du type direction#DeltaX#DeltaY
-                DivePermission
-            in
-                if Possibles == nil
-                    then Direction = surface
-                        Position = pt(x:Absi y:Ord)
-                        DivePermission = false %Tu montes a la surface tu perds ta permission de plonger
-                else
-                    DirChoisie = {List.nth Possibles ( ({OS.rand} mod {List.length Possibles}) + 1 ) }%/!\ mod 0 donne une erreur
-
-                    Direction = DirChoisie.1
-                    Position = pt(x:(Absi+DirChoisie.2) y:(Ord+DirChoisie.3)) %Rappel DirChoisie du type direction#DeltaX#DeltaY
-                    DivePermission = Charact.divePermission
-                end
-                {AdjoinList Charact [position#Position passage#((Absi#Ord)|Charact.passage) divePermission#DivePermission]}
-            end
+        if Charact.damage >= Input.maxDamage then ID = null
         else
-            raise iDonTHaveThePermissionToDiveAndYouAskMeToMove end
+            if Charact.divePermission then
+                ID = Charact.identite
+                local
+                    Absi = Charact.position.x
+                    Ord = Charact.position.y
+                    Possibles = {PossiblesDir Absi Ord Charact.passage}%une liste contenant les directions
+                    DirChoisie %celle du type direction#DeltaX#DeltaY
+                    DivePermission
+                in
+                    if Possibles == nil
+                        then Direction = surface
+                            Position = pt(x:Absi y:Ord)
+                            DivePermission = false %Tu montes a la surface tu perds ta permission de plonger
+                    else
+                        DirChoisie = {List.nth Possibles ( ({OS.rand} mod {List.length Possibles}) + 1 ) }%/!\ mod 0 donne une erreur
+
+                        Direction = DirChoisie.1
+                        Position = pt(x:(Absi+DirChoisie.2) y:(Ord+DirChoisie.3)) %Rappel DirChoisie du type direction#DeltaX#DeltaY
+                        DivePermission = Charact.divePermission
+                    end
+                    {AdjoinList Charact [position#Position passage#((Absi#Ord)|Charact.passage) divePermission#DivePermission]}
+                end
+            else
+                raise iDonTHaveThePermissionToDiveAndYouAskMeToMove end
+            end
         end
     end
 
@@ -141,18 +147,21 @@ in
     %cette fonction choisi l arme et si elle est suffisement load que
     %pour creer une nouvelle alors elle bind KindItem a la nouvelle arme sinon elle bind a null
     fun {ChargeItem ID KindItem Charact}
-        local
-            Weapons = [mine missile drone sonar]
-            Chosen
-        in
-            Chosen = {List.nth Weapons ( ({OS.rand} mod {List.length Weapons}) + 1 ) }
-            %quand tu modifieras pour que ce ne soit plus au hasard, tu devra juste changer le chosen avant cette ligne,
-            %le reste de ce qui est demande est fait ici en dessous
-            ID = Charact.identite
-            if 0 == ((Charact.Chosen+1) mod Input.Chosen) then KindItem = Chosen %on ne bind que si on a atteint le load de l arme
-            else KindItem = null
+        if Charact.damage >= Input.maxDamage then ID = null
+        else
+            local
+                Weapons = [mine missile drone sonar]
+                Chosen
+            in
+                Chosen = {List.nth Weapons ( ({OS.rand} mod {List.length Weapons}) + 1 ) }
+                %quand tu modifieras pour que ce ne soit plus au hasard, tu devra juste changer le chosen avant cette ligne,
+                %le reste de ce qui est demande est fait ici en dessous
+                ID = Charact.identite
+                if 0 == ((Charact.Chosen+1) mod Input.Chosen) then KindItem = Chosen %on ne bind que si on a atteint le load de l arme
+                else KindItem = null
+                end
+                {Record.adjoinAt Charact Chosen (Charact.Chosen + 1)}%j augmente de 1 le load dans les caracteristiques
             end
-            {Record.adjoinAt Charact Chosen (Charact.Chosen + 1)}%j augmente de 1 le load dans les caracteristiques
         end
     end
 
@@ -166,43 +175,46 @@ in
     % Choisi ou pas de tirer si on tire on bind KindFire a ce qu on utilise et comment(direction cible ...)
     % Si on ne tire pas alors KindFire est bind a null (KindFire de type FireItem)
     fun {FireItem ID KindFire Charact}
-        ID = Charact.identite
-        local
+        if Charact.damage >= Input.maxDamage then ID = null
+        else
+            ID = Charact.identite
+            local
 
-            fun {ChoseItemAndCheckUtility Utilisable}
-                if Utilisable == nil then KindFire = null Charact %Pour le moment on tire des qu on sait. Si on est pas sur de la position on pourait eviter ca a l avenir
-                else
-                    local
-                        TupleItem
-                        Item
-                        FirePosition
-                        RemainingAfterward
-                        SubtractedList
-                    in
-                        %ici il faut changer pour que ce soit plus random ;p une maniere est de choisir l'item qui sait atteindre l ennemi avec sa portee propre
-                        TupleItem = {List.nth Utilisable ( ({OS.rand} mod {List.length Utilisable}) + 1 ) } % du type mine#quantiteDeMine
-                        Item = TupleItem.1 %/!\ du type mine
-                        FirePosition = {WhereToFire Item Charact}% Soit une position soit null car il n y a pas de position ou on ne se blesserait pas
+                fun {ChoseItemAndCheckUtility Utilisable}
+                    if Utilisable == nil then KindFire = null Charact %Pour le moment on tire des qu on sait. Si on est pas sur de la position on pourait eviter ca a l avenir
+                    else
+                        local
+                            TupleItem
+                            Item
+                            FirePosition
+                            RemainingAfterward
+                            SubtractedList
+                        in
+                            %ici il faut changer pour que ce soit plus random ;p une maniere est de choisir l'item qui sait atteindre l ennemi avec sa portee propre
+                            TupleItem = {List.nth Utilisable ( ({OS.rand} mod {List.length Utilisable}) + 1 ) } % du type mine#quantiteDeMine
+                            Item = TupleItem.1 %/!\ du type mine
+                            FirePosition = {WhereToFire Item Charact}% Soit une position soit null car il n y a pas de position ou on ne se blesserait pas
 
-                        if FirePosition == null then {ChoseItemAndCheckUtility {List.subtract Utilisable TupleItem}} %je supprime cet item de la liste des dispo et je recommence la selection d item
-                        else
-                            case Item
-                            of mine then KindFire = mine(FirePosition) %choisi une position de mine random
-                                RemainingAfterward = {Value.max (Charact.mine - Input.mine) 0}
-                            [] missile then KindFire = missile(FirePosition) %choisi une position de mine random potentielement sur toi meme ;p
-                                RemainingAfterward = {Value.max (Charact.missile - Input.missile) 0}
-                            [] sonar then KindFire = sonar
-                                RemainingAfterward = {Value.max (Charact.sonar - Input.sonar) 0}
-                            [] drone then KindFire = drone(row  (({OS.rand} mod Input.nRow) + 1) ) %ATTENTION TYPE PEUT-ETRE MAUVAIS!
-                                RemainingAfterward = {Value.max (Charact.drone - Input.drone) 0}
+                            if FirePosition == null then {ChoseItemAndCheckUtility {List.subtract Utilisable TupleItem}} %je supprime cet item de la liste des dispo et je recommence la selection d item
+                            else
+                                case Item
+                                of mine then KindFire = mine(FirePosition) %choisi une position de mine random
+                                    RemainingAfterward = {Value.max (Charact.mine - Input.mine) 0}
+                                [] missile then KindFire = missile(FirePosition) %choisi une position de mine random potentielement sur toi meme ;p
+                                    RemainingAfterward = {Value.max (Charact.missile - Input.missile) 0}
+                                [] sonar then KindFire = sonar
+                                    RemainingAfterward = {Value.max (Charact.sonar - Input.sonar) 0}
+                                [] drone then KindFire = drone(row  (({OS.rand} mod Input.nRow) + 1) ) %ATTENTION TYPE PEUT-ETRE MAUVAIS!
+                                    RemainingAfterward = {Value.max (Charact.drone - Input.drone) 0}
+                                end
+                                {Record.adjoinAt Charact Item RemainingAfterward}
                             end
-                            {Record.adjoinAt Charact Item RemainingAfterward}
                         end
                     end
                 end
+            in
+                {ChoseItemAndCheckUtility {WeaponAvailable Charact} } % {WeaponAvailable Charact} = liste du style [mine#quantiteDeMine missile#quantiteDeMissile ...] J ai garde ce type car ca peut etre utile quand on fera la version efficace
             end
-        in
-            {ChoseItemAndCheckUtility {WeaponAvailable Charact} } % {WeaponAvailable Charact} = liste du style [mine#quantiteDeMine missile#quantiteDeMissile ...] J ai garde ce type car ca peut etre utile quand on fera la version efficace
         end
     end
 
@@ -289,17 +301,20 @@ in
 
     %enonce If a mine was already placed before, the player may decide to make one exploded
     fun {FireMine ID Mine Charact}
-        local
-            Choice % faire exploser ou pas
-        in
-            ID = Charact.identite
-            Choice = true%a modifier si on ameliore
+        if Charact.damage >= Input.maxDamage then ID = null
+        else
+            local
+                Choice % faire exploser ou pas
+            in
+                ID = Charact.identite
+                Choice = true%a modifier si on ameliore
 
-            if Choice then Mine = {GeneratePosition}%a modifier si on ameliore la on se tire peut etre dessus
-            else Mine = null
+                if Choice then Mine = {GeneratePosition}%a modifier si on ameliore la on se tire peut etre dessus
+                else Mine = null
+                end
             end
+            Charact
         end
-        Charact
     end
 
 
@@ -350,24 +365,30 @@ in
 
 
     proc {SayPassingDrone Drone ID Answer Charact}
-        ID = Charact.identite
-        case Drone
-        of drone(Dim Num) then
-            if Dim == row then Answer = (Charact.position.x == Num)
-            else Answer = (Charact.position.y == Num)
+        if Charact.damage >= Input.maxDamage then ID = null
+        else
+            ID = Charact.identite
+            case Drone
+            of drone(Dim Num) then
+                if Dim == row then Answer = (Charact.position.x == Num)
+                else Answer = (Charact.position.y == Num)
+                end
+            else raise droneMisunderstoodInSayPassingDrone end
             end
-        else raise droneMisunderstoodInSayPassingDrone end
         end
     end
 
     %comme trick, je vais toujours envoyer les lignes si il y en a moins que de colonne si c'est l inverse :) (et je vais eviter de dire une ile)
     proc {SayPassingSonar ID Answer Charact}
-        ID = Charact.identite
-        local
-            Mensonge = {FindOtherPos (Input.nRow div 2)+1 (Input.nColumn div 2)+1}
-        in
-            if Input.nColumn > Input.nRow then Answer = pt(x:Charact.position.x y:Mensonge.y)
-            else Answer = pt(x:Mensonge.x y:Charact.position.y)
+        if Charact.damage >= Input.maxDamage then ID = null
+        else
+            ID = Charact.identite
+            local
+                Mensonge = {FindOtherPos (Input.nRow div 2)+1 (Input.nColumn div 2)+1}
+            in
+                if Input.nColumn > Input.nRow then Answer = pt(x:Charact.position.x y:Mensonge.y)
+                else Answer = pt(x:Mensonge.x y:Charact.position.y)
+                end
             end
         end
     end
