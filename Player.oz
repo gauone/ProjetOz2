@@ -192,8 +192,12 @@ in
                             %ici il faut changer pour que ce soit plus random ;p une maniere est de choisir l'item qui sait atteindre l ennemi avec sa portee propre
                             TupleItem = {List.nth Utilisable ( ({OS.rand} mod {List.length Utilisable}) + 1 ) } % du type mine#quantiteDeMine
                             Item = TupleItem.1 %/!\ du type mine
-                            FirePosition = {WhereToFire Item Charact}% Soit une position soit null car il n y a pas de position ou on ne se blesserait pas
-
+                            if Item == mine orelse Item == missile then
+                                FirePosition = {WhereToFire Item Charact}% Soit une position soit null car il n y a pas de position ou on ne se blesserait pas
+                            else 
+                                FirePosition = pasDeFirePositionCarCeNestPasUnItemAvecUnePosition
+                            end
+                            
                             if FirePosition == null then {ChoseItemAndCheckUtility {List.subtract Utilisable TupleItem}} %je supprime cet item de la liste des dispo et je recommence la selection d item
                             else
                                 case Item
@@ -264,7 +268,6 @@ in
                     end
                 end
             end
-
         in
             case Item
             of missile then {GenerateFirePosition Input.maxDistanceMissile Input.minDistanceMissile true}
