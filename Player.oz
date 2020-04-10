@@ -97,18 +97,17 @@ in
                     DirChoisie %celle du type direction#DeltaX#DeltaY
                     DivePermission
                 in
-                    if Possibles == nil
-                        then Direction = surface
+                    if Possibles == nil then
+                            Direction = surface
                             Position = pt(x:Absi y:Ord)
-                            DivePermission = false %Tu montes a la surface tu perds ta permission de plonger
+                            %Tu montes a la surface tu perds ta permission de plonger et Tu dois oublier ou je suis passe car je fais surface
+                            {AdjoinList Charact [position#Position passage#nil divePermission#false]}
                     else
-                        DirChoisie = {List.nth Possibles ( ({OS.rand} mod {List.length Possibles}) + 1 ) }%/!\ mod 0 donne une erreur
-
-                        Direction = DirChoisie.1
-                        Position = pt(x:(Absi+DirChoisie.2) y:(Ord+DirChoisie.3)) %Rappel DirChoisie du type direction#DeltaX#DeltaY
-                        DivePermission = Charact.divePermission
+                        DirChoisie = {List.nth Possibles ( ({OS.rand} mod {List.length Possibles}) + 1 ) } %/!\ mod 0 donne une erreur
+                        Direction = DirChoisie.1 %Rappel DirChoisie du type direction#DeltaX#DeltaY
+                        Position = pt(x:(Absi+DirChoisie.2) y:(Ord+DirChoisie.3))
+                        {AdjoinList Charact [position#Position passage#((Absi#Ord)|Charact.passage)]}
                     end
-                    {AdjoinList Charact [position#Position passage#((Absi#Ord)|Charact.passage) divePermission#DivePermission]}
                 end
             else
                 raise iDonTHaveThePermissionToDiveAndYouAskMeToMove end
