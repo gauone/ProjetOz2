@@ -260,3 +260,262 @@ local
 in
     {Browse {SumList List}}
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+declare
+
+Message = sayDeath(id(blue 1 basicAI))
+
+proc{PatterMatchingTest M}
+    case M
+    of sayDeath(id(Color Id Name)) then
+        {Browse 'Matched'}
+    else
+        {Browse 'IDK'}
+    end
+end
+
+{PatterMatchingTest Message}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+declare
+
+
+/*
+ * Supprimer les {Browse ...}
+ *
+ * InformMissile envoi les informations du missile a chaque sub dans l'ordre de PPL (ordre Id)
+ * Retourne une MaJ de la VieJoueurList
+ * PPL = PlayerPortList
+ * FID = FireId
+ * MP = MissilePosition
+ * VJL = VieJoueurList (car c'est la premiere utilisation d'une subVJL)
+ */
+fun{InformMissile PPL FID MP VJL}
+    local
+        MissileMessage
+    in 
+        case PPL
+        of Port|T then 
+            {Send Port sayMissileExplode(FID MP MissileMessage)}
+            {Browse 'Wait MissileMessage'}
+            {Wait MissileMessage}
+            {Browse 'MissileMessage binded'}
+
+            if(MissileMessage \= null) then
+                %{Radio MissileMessage}
+
+                case MissileMessage
+                of sayDeath(id(ActualColor ActualId ActualName)) then % Note la mort d'un joueur
+                    {InformMissile T FID MP {AdjoinListAt VJL ActualId 0}}
+                else
+                    raise illegalMissileMessage end
+                end
+            else
+                {Browse 'MissileMessage was null'}
+                {InformMissile T FID MP VJL}
+            end
+        else
+            VJL
+        end
+    end
+end
+
+
+local
+    SubVJL
+    S1
+    P1
+    S2
+    P2
+    {NewPort S1 P1}
+    {NewPort S2 P2}
+
+    PlayerPortList = [P1 P2]
+    FireId = 1
+    MissilePosition = 5
+    VieJoueursList = [1 1]
+in
+    thread
+        SubVJL = {InformMissile PlayerPortList FireId MissilePosition VieJoueursList}
+        {Delay 1000}
+        {Browse SubVJL}
+    end
+
+    thread
+        case S1
+        of H|T then 
+            case H
+            of sayMissileExplode(A1 A2 M) then
+                {Delay 500}
+                {Browse 'Player 1 binds null'}
+                M = null
+            end
+        end
+
+        case S2
+        of H|T then 
+            case H
+            of sayMissileExplode(A1 A2 M) then
+                {Browse 'Player 2 binds sayDeath'}
+                {Delay 500}
+                M = sayDeath(id(blue 2 basicAI))
+            end
+        end
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+declare
+
+
+/*
+ * InformMine envoi les informations de la mine a chaque sub dans l'ordre de PPL (ordre Id)
+ * Retourne une MaJ de la VieJoueurList
+ * PPL = PlayerPortList
+ * MID = MineId
+ * MP = MinePosition
+ * SVJLM = SubVJLMissile (car c'est le dernier cas ou il y aurait pu y avoir un mort)
+ */
+fun{InformMine PPL MID MP SVJLM}
+    local
+        MineMessage
+    in 
+        case PPL
+        of Port|T then 
+            {Send Port sayMineExplode(MID MP MineMessage)}
+            {Browse 'Wait MineMessage'}
+            {Wait MineMessage}
+            {Browse 'MineMessage binded'}
+
+            if(MineMessage \= null) then
+                %{Radio MissileMessage}
+
+                case MineMessage
+                of sayDeath(id(ActualColor ActualId ActualName)) then % Note la mort d'un joueur
+                    {InformMine T MID MP {AdjoinListAt SVJLM ActualId 0}}
+                else
+                    raise illegalMineMessage end
+                end
+            else
+                {Browse 'MineMessage was null'}
+                {InformMine T MID MP SVJLM}
+            end
+        else
+            SVJLM
+        end
+    end
+end
+
+
+local
+    SubVJLMine
+    S1
+    P1
+    S2
+    P2
+    S3
+    P3
+    {NewPort S1 P1}
+    {NewPort S2 P2}
+    {NewPort S3 P3}
+
+    PlayerPortList = [P1 P2 P3]
+    MineId = 1
+    MinePosition = 5
+    SubVJLMissile = [1 1 1]
+in
+    thread
+        SubVJLMine = {InformMine PlayerPortList MineId MinePosition SubVJLMissile}
+        {Delay 1000}
+        {Browse SubVJLMine}
+    end
+
+    thread
+        case S1
+        of H|T then 
+            case H
+            of sayMineExplode(A1 A2 M) then
+                {Browse 'Player 1 binds null'}
+                M = null
+            end
+        end
+
+        case S2
+        of H|T then 
+            case H
+            of sayMineExplode(A1 A2 M) then
+                {Browse 'Player 2 binds sayDeath'}
+                M = sayDeath(id(blue 2 basicAI))
+            end
+        end
+
+        case S3
+        of H|T then 
+            case H
+            of sayMineExplode(A1 A2 M) then
+                {Browse 'Player 3 binds null'}
+                M = null
+            end
+        end
+
+
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Premiere version : sens de X et Y
+
+declare
+
+fun{NewPosition MovePos MoveDir}
+    case MoveDir
+    of north then
+        case MovePos
+        of pt(x:X y:Y) then 
+            pt(x:X-1 y:Y)
+        else
+            raise illegalPosition end
+        end
+    [] east then
+        case MovePos
+        of pt(x:X y:Y) then 
+            pt(x:X y:Y+1)
+        else
+            raise illegalPosition end
+        end
+    [] south then
+        case MovePos
+        of pt(x:X y:Y) then 
+            pt(x:X+1 y:Y)
+        else
+            raise illegalPosition end
+        end
+    [] west then 
+        case MovePos
+        of pt(x:X y:Y) then 
+            pt(x:X y:Y-1)
+        else
+            raise illegalPosition end
+        end
+    else
+        raise illegalDirection end
+    end
+end
+
+{Browse {NewPosition pt(x:3 y:2) north}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

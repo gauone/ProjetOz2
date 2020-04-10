@@ -134,7 +134,7 @@ define
 
 
    /*
-    * Envoi le Message sur la radio (donc a tout les ports ET le GUI)
+    * Envoi le Message sur la radio (donc a tout les ports)
     */
    proc{Radio Message}
       proc{Rrec M L}
@@ -143,7 +143,7 @@ define
                {Send PlayerPort Message}
                {Rrec M T}
          [] nil then
-               {Send GUIP Message}
+               skip
          end
       end
    in
@@ -178,6 +178,85 @@ define
 
 
    /*
+    * InformMissile envoi les informations du missile a chaque sub dans l'ordre de PPL (ordre Id)
+    * Retourne une MaJ de la VieJoueurList
+    * PPL = PlayerPortList
+    * FID = FireId
+    * MP = MissilePosition
+    * VJL = VieJoueurList (car c'est la premiere utilisation d'une subVJL)
+    */
+   fun{InformMissile PPL FID MP VJL}
+      local
+         MissileMessage
+      in 
+         case PPL
+         of Port|T then 
+               {Send Port sayMissileExplode(FID MP MissileMessage)}
+               {Wait MissileMessage}
+
+               if(MissileMessage \= null) then
+                  {Radio MissileMessage}
+
+                  case MissileMessage
+                  of sayDeath(id(color:ActualColor id:ActualId name:ActualName)) then % Note la mort d'un joueur
+                     {Send GUIP removePlayer(ActualId)}
+                     {InformMissile T FID MP {AdjoinListAt VJL ActualId 0}}
+                  [] sayDamageTaken(ActualId ActualDamage ActualLifeLeft) then
+                     {Send GUIP lifeUpdate(ActualId ActualLifeLeft)}
+                     {InformMissile T FID MP VJL}
+                  end
+               else
+                  {InformMissile T FID MP VJL}
+               end
+         else
+            VJL
+         end
+      end
+   end
+
+
+   /*
+    * SubVJLMine = {InformMine PlayerPortList MineId MinePosition SubVJLMissile}
+    *
+    * InformMine envoi les informations de la mine a chaque sub dans l'ordre de PPL (ordre Id)
+    * Retourne une MaJ de la VieJoueurList
+    * PPL = PlayerPortList
+    * MID = MineId
+    * MP = MinePosition
+    * SVJLM = SubVJLMissile (car c'est le dernier cas ou il y aurait pu y avoir un mort)
+    */
+   fun{InformMine PPL MID MP SVJLM}
+      local
+         MineMessage
+      in 
+         case PPL
+         of Port|T then 
+            {Send Port sayMineExplode(MID MP MineMessage)}
+            {Wait MineMessage}
+
+            if(MineMessage \= null) then
+               {Radio MineMessage}
+
+               case MineMessage
+               of sayDeath(id(color:ActualColor id:ActualId name:ActualName)) then % Note la mort d'un joueur
+                  {Send GUIP removePlayer(ActualId)}
+                  {InformMine T MID MP {AdjoinListAt SVJLM ActualId 0}}
+               [] sayDamageTaken(ActualId ActualDamage ActualLifeLeft) then
+                  {Send GUIP lifeUpdate(ActualId ActualLifeLeft)}
+                  {InformMine T MID MP SVJLM}                  
+               end
+
+            else
+               {InformMine T MID MP SVJLM}
+            end
+         else
+            SVJLM
+         end
+      end
+   end
+
+
+   /*
     * Partie tour par tour
     */
    proc{StartTBT}
@@ -185,282 +264,304 @@ define
        * Turn by turn Actions : 
        * PPL = PlayerPortList qui sera parcouru pour donner la main au joueur dans l'ordre des Id
        * Id = Id du joueur en cours
-       * SJL = EtatJoueurList
+       * SJL = SurfaceJoueurList
        */
       proc{TBTActions PPL SJL VJL Id} % Recursion sur les joueurs (ordre PlayerPortList est dans l'ordre des Ids)
-         case PPL
-         of PlayerPort|T then % Actions pour un tour d'un joueur
+         local
+            SubVJLMissile SubVJLMine
+         in
+            %%%%%%%%%%%%%%%%%%%%
 
-            {System.show '-------------------- Debut du tour joueur'}
+            case PPL
+            of PlayerPort|T then % Actions pour un tour d'un joueur
 
-            %%%%  -- Pt.0 --  %%%
-            /*
-             * Verifie si il ne reste qu'un joueur.
-             * Sinon, verifie si le joueur est mort.
-             * Si oui, on passe au joueur prochain
-             */
+               {System.show '-------------------- Debut du tour joueur'}
 
-            local
-               Vivant = {SumList VJL}
-            in
-               if(Vivant == 1) then
-
-                  {System.show '-------------------- Partie terminee '}
-                  {TBTActions nil SJL VJL 1}
-
-               end
-
-            end
-
-            {System.show '-------------------- Pt.0'}
-
-            local
-               DeadAnswer
-            in
-               {Send PlayerPort isDead(DeadAnswer)}
-               {Wait DeadAnswer}
-               if(DeadAnswer == true) then
-                  {TBTActions T SJL {AdjoinListAt VJL Id 0} Id+1}
-               end
-            end
-
-            %%%%  -- Pt.1 --  %%%
-            /*
-             * Verifie si le sous-marin peut jouer (s'il n'est plus a la surface).
-             * Si le sous-marin est a la surface : Pt.9.
-             */
-
-            {System.show '-------------------- Pt.1'}
-
-            local
-               NiveauSurface = {List.nth SJL Id}
-            in
-               if(NiveauSurface > 0) then % Variable Round inutile car au 1er Round, tout le monde a sa surface a 0
-                  {TBTActions T {AdjoinListAt SJL Id (NiveauSurface-1)} VJL Id+1} % Joueur doit encore passer un tour en surface
-               end            
-            end
-
-            %%%%  -- Pt.2 --  %%%
-            /*
-             * S'il s'agit du premier tour, ou si au tour precedent le sous-marin a fait surface : 
-             * Envoie le message de plongee au sous-marin
-             */
-
-            {System.show '-------------------- Pt.2'}
-
-            if({List.nth SJL Id} == 0) then
-               {Send PlayerPort dive}
-            end
-
-            %%%%  -- Pt.3 --  %%%
-            /*
-             * Demande au sous-marin de choisir sa direction.
-             * Si la direction n'est pas surface : Pt.5
-             */
-
-            {System.show '-------------------- Pt.3'}
-
-            local
-               MoveId MovePos MoveDir
-            in
-               {Send PlayerPort move(MoveId MovePos MoveDir)}
-               {Wait MoveId}
-               {Wait MovePos}
-               {Wait MoveDir}
-
-               %%%%  -- Pt.4 --  %%%
+               %%%%  -- Pt.0 --  %%%%
                /*
-                * La surface a ete choisie, le tour du joueur s'arrete et est compte comme le premier tour passe a la surface.
-                * L'informations que ce joueur a fait surface est diffusee par la radio.
-                * Le sous-marin reste un total de tours Input.turnSurface a la surface avant de continuer
-                */
+               * Verifie si il ne reste qu'un joueur.
+               * Sinon, verifie si le joueur est mort.
+               * Si oui, on passe au joueur prochain
+               */
 
-               {System.show '-------------------- Pt.4'}
+               local
+                  Vivant = {SumList VJL}
+               in
+                  if(Vivant == 1) then
 
-               if(MoveDir == surface) then
-                  {Radio saySurface(MoveId)}
-                  {TBTActions T {AdjoinListAt SJL Id (Input.turnSurface-1)} VJL Id+1}
+                     {System.show '-------------------- Partie terminee '}
+                     {TBTActions nil SJL VJL 1}
+
+                  end
                end
 
-               %%%%  -- Pt.5 --  %%%
+               {System.show '-------------------- Pt.0'}
+
+               local
+                  DeadAnswer
+               in
+                  {Send PlayerPort isDead(DeadAnswer)}
+                  {Wait DeadAnswer}
+                  if(DeadAnswer == true) then
+                     %{Radio sayDead(ID)} Jsp comment recuperer l'ID complet mais je pense que cette fonction n'est plus utile
+                     {TBTActions T SJL {AdjoinListAt VJL Id 0} Id+1}
+                  end
+               end
+
+               %%%%  -- Pt.1 --  %%%%
                /*
-                * La direction choisie est diffusee par la radio.
-                */
+               * Verifie si le sous-marin peut jouer (s'il n'est plus a la surface).
+               * Si le sous-marin est a la surface : Pt.9.
+               */
 
-               {System.show '-------------------- Pt.5'}
-               
-               {Radio sayMove(MoveId MoveDir)}
+               {System.show '-------------------- Pt.1'}
 
-            end
-
-            %%%%  -- Pt.6 --  %%%
-            /*
-             * Le sous-marin est desormais autorise a charger un objet.
-             * Si la reponse contient des informations sur un nouveau item, l'information est diffusee par la radio.
-             */
-
-            {System.show '-------------------- Pt.6'}
-
-            local
-               ChargeId ChargeItem
-            in
-               {Send PlayerPort chargeItem(ChargeId ChargeItem)}
-               {Wait ChargeId}
-               {Wait ChargeItem}
-
-               if(ChargeItem \= null) then
-                  {Radio sayCharge(ChargeId ChargeItem)}
+               local
+                  NiveauSurface = {List.nth SJL Id}
+               in
+                  if(NiveauSurface > 0) then % Variable Round inutile car au 1er Round, tout le monde a sa surface a 0
+                     {TBTActions T {AdjoinListAt SJL Id (NiveauSurface-1)} VJL Id+1} % Joueur doit encore passer un tour en surface
+                  end            
                end
-            end
 
-            %%%%  -- Pt.7 --  %%%
-            /*
-             * Le sous-marin est desormais autorise a tirer un objet.
-             * Si la reponse contient des informations sur un objet tire l'information est diffusee par la radio.
-             */
+               %%%%  -- Pt.2 --  %%%%
+               /*
+               * S'il s'agit du premier tour, ou si au tour precedent le sous-marin a fait surface : 
+               * Envoie le message de plongee au sous-marin
+               */
 
-            {System.show '-------------------- Pt.7'}
+               {System.show '-------------------- Pt.2'}
 
-            local
-               FireId FireItem
-            in
-               {Send PlayerPort fireItem(FireId FireItem)} %FireItem <fireitem>
-               {Wait FireId}
-               {Wait FireItem}
+               if({List.nth SJL Id} == 0) then
+                  {Send PlayerPort dive}
+               end
 
-               case FireItem
-               of mine(Position) then 
+               %%%%  -- Pt.3 --  %%%%
+               /*
+               * Demande au sous-marin de choisir sa direction.
+               * Si la direction n'est pas surface : Pt.5
+               */
 
-                  {System.show '-------------------- Pt.7 : Mine'} 
+               {System.show '-------------------- Pt.3'}
 
-                  {Radio sayMinePlaced(FireId)}
-               [] missile(Position) then
+               local
+                  MoveId MovePos MoveDir
+               in
+                  {Send PlayerPort move(MoveId MovePos MoveDir)}
+                  {Wait MoveId}
+                  {Wait MovePos}
+                  {Wait MoveDir}
 
-                  {System.show '-------------------- Pt.7 : Missile'}   
+                  %%%%  -- Pt.4 --  %%%%
+                  /*
+                  * La surface a ete choisie, le tour du joueur s'arrete et est compte comme le premier tour passe a la surface.
+                  * L'informations que ce joueur a fait surface est diffusee par la radio.
+                  * Le sous-marin reste un total de tours Input.turnSurface a la surface avant de continuer
+                  */
 
-                  for Port in PlayerPortList do
-                     local
-                        MissileMessage
-                     in 
-                        {Send Port sayMissileExplode(FireId Position MissileMessage)}
-                        {Wait MissileMessage}
-                        if(MissileMessage \= null) then 
-                           {Radio MissileMessage}
+                  {System.show '-------------------- Pt.4'}
+
+                  if(MoveDir == surface) then
+                     {Radio saySurface(MoveId)}
+                     {Send GUIP surface(MoveId)}
+                     {TBTActions T {AdjoinListAt SJL Id (Input.turnSurface-1)} VJL Id+1}
+                  end
+
+                  %%%%  -- Pt.5 --  %%%%
+                  /*
+                  * La direction choisie est diffusee par la radio.
+                  */
+
+                  {System.show '-------------------- Pt.5'}
+                  
+                  {Radio sayMove(MoveId MoveDir)}
+                  {Send GUIP movePlayer(MoveId MovePos)}
+
+               end
+
+               %%%%  -- Pt.6 --  %%%%
+               /*
+               * Le sous-marin est desormais autorise a charger un objet.
+               * Si la reponse contient des informations sur un nouveau item, l'information est diffusee par la radio.
+               */
+
+               {System.show '-------------------- Pt.6'}
+
+               local
+                  ChargeId ChargeItem
+               in
+                  {Send PlayerPort chargeItem(ChargeId ChargeItem)}
+                  {Wait ChargeId}
+                  {Wait ChargeItem}
+
+                  if(ChargeItem \= null) then
+                     {Radio sayCharge(ChargeId ChargeItem)}
+                  end
+               end
+
+               %%%%  -- Pt.7 --  %%%%
+               /*
+               * Le sous-marin est desormais autorise a tirer un objet.
+               * Si la reponse contient des informations sur un objet tire l'information est diffusee par la radio.
+               */
+
+               {System.show '-------------------- Pt.7'}
+
+               local
+                  FireId FireItem
+               in
+                  {Send PlayerPort fireItem(FireId FireItem)} %FireItem <fireitem>
+                  {Wait FireId}
+                  {Wait FireItem}
+
+                  case FireItem
+                  of mine(MinePosition) then 
+
+                     {System.show '-------------------- Pt.7 : Mine'} 
+
+                     {Radio sayMinePlaced(FireId)}
+                     {Send GUIP putMine(FireId MinePosition)}
+
+                     SubVJLMissile = VJL
+
+                  [] missile(MissilePosition) then
+
+                     {System.show '-------------------- Pt.7 : Missile'}
+                     {Send GUIP explosion(FireId MissilePosition)}
+
+                     /*
+                      * Modification de VJL sans relancer la proc{TBTActions ...} m'oblige a faire des variables locales
+                      * J'utilise une function plutot qu'une boucle for pour les memes raisons
+                      */
+                     SubVJLMissile = {InformMissile PlayerPortList FireId MissilePosition VJL}
+
+                  [] drone(Dim Num) then % drone(row <x>) / drone(column <y>)
+
+                     {System.show '-------------------- Pt.7 : Drone'} 
+                     {Send GUIP drone(FireId drone(Dim Num))}
+
+                     for Port in PlayerPortList do
+                        local
+                           PassingId PassingAnswer
+                        in 
+                           {Send Port sayPassingDrone(drone(Dim Num) PassingId PassingAnswer)}
+                           {Wait PassingId}
+                           {Wait PassingAnswer}
+
+                           {System.show '-------------------- Pt.7 : sayPassingDrone binded'} 
+
+                           {Send PlayerPort sayAnswerDrone(drone(Dim Num) PassingId PassingAnswer)}
                         end
-
-                        %case MissileMessage
-                        %of sayDeath(id(ActualColor ActualId ActualName)) then
-                        %   {TBTActions T {AdjoinListAt SJL Id (Input.turnSurface-1)} VJL Id+1} Mais je peux pas reappeler la fct ici vu qu'il reste des Pts... 
-                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Ici je dois mettre a jour VJL 
                      end
-                  end
-               [] drone(Dim Num) then % drone(row <x>) / drone(column <y>)
 
-                  {System.show '-------------------- Pt.7 : Drone'} 
+                     SubVJLMissile = VJL
 
-                  for Port in PlayerPortList do
-                     local
-                        PassingId PassingAnswer
-                     in 
-                        {Send Port sayPassingDrone(drone(Dim Num) PassingId PassingAnswer)}
-                        {Wait PassingId}
-                        {Wait PassingAnswer}
+                  [] sonar then 
 
-                        {Send PlayerPort sayAnswerDrone(drone(Dim Num) PassingId PassingAnswer)}
-                     end
-                  end
-               [] sonar then 
+                     {System.show '-------------------- Pt.7 : Sonar'}
+                     {Send GUIP sonar(FireId)}
 
-                  {System.show '-------------------- Pt.7 : Sonar'} 
+                     for Port in PlayerPortList do
+                        local
+                           SonarId SonarPos
+                        in 
+                           {Send Port sayPassingSonar(SonarId SonarPos)}
+                           {Wait SonarId}
+                           {Wait SonarPos}
 
-                  for Port in PlayerPortList do
-                     local
-                        SonarId SonarPos
-                     in 
-                        {Send Port sayPassingSonar(SonarId SonarPos)}
-                        {Wait SonarId}
-                        {Wait SonarPos}
+                           {System.show '-------------------- Pt.7 : sayPassingSonar binded'} 
 
-                        {Send PlayerPort sayAnswerSOnar(SonarId SonarPos)}
-                     end
-                  end
-               else % null ou autre 
-
-                  {System.show '-------------------- Pt.7 : Pas de tir'} % Pas d'item tire
-
-               end
-            end
-
-            %%%%  -- Pt.8 --  %%%
-            /*
-             * Le sous-marin est desormais autorise a faire exploser une mine.
-             * Si la reponse contient des informations sur l'explosion une mine, l'information est diffusee par la radio.
-             */
-
-            {System.show '-------------------- Pt.8'}
-
-            local
-               MineId MinePosition
-            in
-               {Send PlayerPort fireMine(MineId MinePosition)} % J'envoi la requete, le player est honette, si il n'a pas de mine
-               {Wait MineId} % Tjrs bound
-               {Wait MinePosition} % MinePosition : <mine> ::= null | <position>. Si null, pas d'explosion
-
-               if(MinePosition \= null) then
-                  for Port in PlayerPortList do
-                     local
-                        MineMessage
-                     in 
-                        {Send Port sayMineExplode(MineId MinePosition MineMessage)}
-                        {Wait MineMessage}
-                        if(MineMessage \= null) then 
-                           {Radio MineMessage}
+                           {Send PlayerPort sayAnswerSOnar(SonarId SonarPos)}
                         end
-                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Ici je dois mettre a jour VJL
                      end
+
+                     SubVJLMissile = VJL
+                     
+                  else % null ou autre 
+
+                     SubVJLMissile = VJL
+                     {System.show '-------------------- Pt.7 : Pas de tir'} % Pas d'item tire
+
+                  end
+               end
+
+               %%%%  -- Pt.8 --  %%%
+               /*
+               * Le sous-marin est desormais autorise a faire exploser une mine.
+               * Si la reponse contient des informations sur l'explosion une mine, l'information est diffusee par la radio.
+               */
+
+               {System.show '-------------------- Pt.8'}
+
+               local
+                  MineId MinePosition
+               in
+                  {Send PlayerPort fireMine(MineId MinePosition)} % J'envoi la requete, le player est honette, si il n'a pas de mine
+                  {Wait MineId} % Tjrs bound
+                  {Wait MinePosition} % MinePosition : <mine> ::= null | <position>. Si null, pas d'explosion
+
+                  if(MinePosition \= null) then 
+
+                     {System.show '-------------------- Lancement InforMine'}
+                     {Send GUIP explosion(MineId MinePosition)}
+
+                     /*
+                     * Modification de VJL sans relancer la proc{TBTActions ...} m'oblige a faire des variables locales
+                     * J'utilise une function plutot qu'une boucle for pour les memes raisons
+                     */
+                     SubVJLMine = {InformMine PlayerPortList MineId MinePosition SubVJLMissile}
+
+                     {System.show '-------------------- Terminaison InforMine'}
+                     {System.show '-------------------- SubVJLMine : '}
+                     {Wait SubVJLMine}
+                     {System.show SubVJLMine}
+
+                  else
+                     SubVJLMine = SubVJLMissile % Comme le recursion finale prend d'office SubVJLMine
+                  end
+
+               end
+
+               %%%%  -- Pt.9 --  %%%
+               /*
+               * Le tour est termine pour ce sous-marin
+               */
+
+               {System.show '-------------------- Pt.9'}
+               {System.show '-------------------- Fin du tour joueur'}
+
+               {TBTActions T SJL SubVJLMine Id+1} % Recursion du tour pour le prochain joueur
+
+            else
+               local
+                  Vivant = {SumList VJL}
+               in
+                  if(Vivant == 1) then
+
+                     {System.show '-------------------- Fermeture de la partie'}
+
+                  else
+
+                     {System.show '-------------------- Fin du Round'}
+
+                     {Wait Vivant}
+                     {Wait PPL}
+                     {Wait SJL}
+                     {Wait VJL}
+                     {System.show '-------------------- Recaptilulatif du Round : Vivants, PPL, SJL, VJL'}
+                     {System.show Vivant}
+                     {System.show PPL}
+                     {System.show SJL}
+                     {System.show VJL}
+
+                     {System.show '-------------------- Lancement nouveau Round'}
+
+                     {TBTActions PlayerPortList SJL VJL 1} % Chaque jouer a joue, nouveau round
                   end
                end
             end
 
-            %%%%  -- Pt.9 --  %%%
-            /*
-             * Le tour est termine pour ce sous-marin
-             */
-
-            {System.show '-------------------- Pt.9'}
-            {System.show '-------------------- Fin du tour joueur'}
-
-            {TBTActions T SJL VJL Id+1} % Recursion du tour pour le prochain joueur
-
-         else
-
-            local
-               Vivant = {SumList VJL}
-            in
-               if(Vivant == 1) then
-
-                  {System.show '-------------------- Fermeture de la partie'}
-
-               else
-
-                  {System.show '-------------------- Fin du Round'}
-
-                  {Wait Vivant}
-                  {Wait PPL}
-                  {Wait SJL}
-                  {Wait VJL}
-                  {System.show '-------------------- Recaptilulatif du Round : Vivants, PPL, SJL, VJL'}
-                  {System.show Vivant}
-                  {System.show PPL}
-                  {System.show SJL}
-                  {System.show VJL}
-
-                  {System.show '-------------------- Lancement nouveau Round'}
-
-                  {TBTActions PlayerPortList SJL VJL 1} % Chaque jouer a joue, nouveau round
-               end
-            end
-
+            %%%%%%%%%%%%%%%%%%%%
          end
       end
    in
@@ -528,6 +629,12 @@ end
    Dans le Pt.8, c'est la main qui doit verifier si le joueur a deja place une mine ? Ou j'envoi et le joueur est honnete
  
    Joueur sous l'eau doit avoir surface ~1 \= -1
+
+   {Wait Id} et seulement Id quand on en attend plusieurs car un sub mort ne repond que ca ! 
+
+   ctrl+f %{Send GUIP lifeUpdate(ActualId Life)} Comment obtenir life ? : 
+   Je ne sais pas comment obtenir Life facilement... a pensez plus tard
+
  
  
 */
