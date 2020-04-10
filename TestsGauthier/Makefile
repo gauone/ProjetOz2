@@ -1,10 +1,11 @@
 files = ../Input.oz ../PlayerManager.oz ../Player.oz ../GUI.oz ../Main.oz FichierTestPlayer.oz
 
-build : $(files)
+all : $(files)
 	/Applications/Mozart2.app/Contents/Resources/bin/ozc -c ../Input.oz ../PlayerManager.oz ../Player.oz ../GUI.oz ../Main.oz
+	say "Tout les fichier sont compilé"
 
-run : $(files)
-	build
+run : $(files) all
+	say "Fichiers compilés. Lancement de la partie."
 	/Applications/Mozart2.app/Contents/Resources/bin/ozengine Main.ozf
 
 clean : $(files)
@@ -12,10 +13,16 @@ clean : $(files)
 
 player : $(files)
 	/Applications/Mozart2.app/Contents/Resources/bin/ozc -c ../Input.oz ../Player.oz FichierTestPlayer.oz
+	say "Fichiers Input.oz Player.oz compilé"
 	/Applications/Mozart2.app/Contents/Resources/bin/ozengine FichierTestPlayer.ozf
 
 ftestplayer : $(files)
 	/Applications/Mozart2.app/Contents/Resources/bin/ozc -c FichierTestPlayer.oz
+	say "Fichier FichierTestPlayer compilé"
 	/Applications/Mozart2.app/Contents/Resources/bin/ozengine FichierTestPlayer.ozf
 
+main : $(files)
+	/Applications/Mozart2.app/Contents/Resources/bin/ozc -c ../Main.oz
+	say "Fichier principal compilé"
+	/Applications/Mozart2.app/Contents/Resources/bin/ozengine Main.ozf
 	
