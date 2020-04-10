@@ -199,6 +199,7 @@ define
 
                   case MissileMessage
                   of sayDeath(id(color:ActualColor id:ActualId name:ActualName)) then % Note la mort d'un joueur
+                     {Send GUIP lifeUpdate(ActualId 0)}
                      {Send GUIP removePlayer(ActualId)}
                      {InformMissile T FID MP {AdjoinListAt VJL ActualId 0}}
                   [] sayDamageTaken(ActualId ActualDamage ActualLifeLeft) then
@@ -241,6 +242,7 @@ define
 
                case MineMessage
                of sayDeath(id(color:ActualColor id:ActualId name:ActualName)) then % Note la mort d'un joueur
+                  {Send GUIP lifeUpdate(ActualId 0)}
                   {Send GUIP removePlayer(ActualId)}
                   {InformMine T MID MP {AdjoinListAt SVJLM ActualId 0}}
                [] sayDamageTaken(ActualId ActualDamage ActualLifeLeft) then
@@ -507,14 +509,6 @@ define
                            {System.show '-------------------- Fin du tour joueur'}
 
                            {TBTActions T SJL SubVJLMine Id+1} % Recursion du tour pour le prochain joueur
-
-
-
-
-
-
-
-
 
                         end                        
                      end            
