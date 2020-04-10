@@ -83,26 +83,30 @@ in
     % Fonction qui choisit la direction a prendre, ajoute la derniere position a passage et rend une nouvelle position
     % Random dans un premier temps ;p /!\j'ajoute a passage la position precedente seulement
     fun {Move ID Position Direction Charact}
-        ID = Charact.identite
-        local
-            Absi = Charact.position.x
-            Ord = Charact.position.y
-            Possibles = {PossiblesDir Absi Ord Charact.passage}%une liste contenant les directions
-            DirChoisie %celle du type direction#DeltaX#DeltaY
-            DivePermission
-        in
-            if Possibles == nil
-                then Direction = surface
-                    Position = pt(x:Absi y:Ord)
-                    DivePermission = false %Tu montes a la surface tu perds ta permission de plonger
-            else
-                DirChoisie = {List.nth Possibles ( ({OS.rand} mod {List.length Possibles}) + 1 ) }%/!\ mod 0 donne une erreur
+        if Charact.divePermission then
+            ID = Charact.identite
+            local
+                Absi = Charact.position.x
+                Ord = Charact.position.y
+                Possibles = {PossiblesDir Absi Ord Charact.passage}%une liste contenant les directions
+                DirChoisie %celle du type direction#DeltaX#DeltaY
+                DivePermission
+            in
+                if Possibles == nil
+                    then Direction = surface
+                        Position = pt(x:Absi y:Ord)
+                        DivePermission = false %Tu montes a la surface tu perds ta permission de plonger
+                else
+                    DirChoisie = {List.nth Possibles ( ({OS.rand} mod {List.length Possibles}) + 1 ) }%/!\ mod 0 donne une erreur
 
-                Direction = DirChoisie.1
-                Position = pt(x:(Absi+DirChoisie.2) y:(Ord+DirChoisie.3)) %Rappel DirChoisie du type direction#DeltaX#DeltaY
-                DivePermission = Charact.divePermission
+                    Direction = DirChoisie.1
+                    Position = pt(x:(Absi+DirChoisie.2) y:(Ord+DirChoisie.3)) %Rappel DirChoisie du type direction#DeltaX#DeltaY
+                    DivePermission = Charact.divePermission
+                end
+                {AdjoinList Charact [position#Position passage#((Absi#Ord)|Charact.passage) divePermission#DivePermission]}
             end
-            {AdjoinList Charact [position#Position passage#((Absi#Ord)|Charact.passage) divePermission#DivePermission]}
+        else
+            raise iDonTHaveThePermissionToDiveAndYouAskMeToMove end
         end
     end
 
@@ -173,6 +177,7 @@ in
                         Item
                         FirePosition
                         RemainingAfterward
+                        SubtractedList
                     in
                         %ici il faut changer pour que ce soit plus random ;p une maniere est de choisir l'item qui sait atteindre l ennemi avec sa portee propre
                         TupleItem = {List.nth Utilisable ( ({OS.rand} mod {List.length Utilisable}) + 1 ) } % du type mine#quantiteDeMine
@@ -191,8 +196,8 @@ in
                             [] drone then KindFire = drone(row  (({OS.rand} mod Input.nRow) + 1) ) %ATTENTION TYPE PEUT-ETRE MAUVAIS!
                                 RemainingAfterward = {Value.max (Charact.drone - Input.drone) 0}
                             end
+                            {Record.adjoinAt Charact Item RemainingAfterward}
                         end
-                        {Record.adjoinAt Charact Item RemainingAfterward}
                     end
                 end
             end
@@ -334,8 +339,8 @@ in
             in
             if ManDist >= 2 then Message = null Charact
             else % 2 - ManDist est la formule du damage que je recois (si elle est < que 2 seulement)
-                if (2 - ManDist + Charact.damage) >= Input.maxDamage then Message = sayDeath(Charact.id)
-                else Message = sayDamageTaken(Charact.id (2 - ManDist) (Input.maxDamage - 2 + ManDist - Charact.damage) )
+                if (2 - ManDist + Charact.damage) >= Input.maxDamage then Message = sayDeath(Charact.identite)
+                else Message = sayDamageTaken(Charact.identite (2 - ManDist) (Input.maxDamage - 2 + ManDist - Charact.damage) )
                 end
                 {Record.adjoinAt Charact damage (Charact.damage + 2 - ManDist)}
             end
@@ -348,8 +353,8 @@ in
         ID = Charact.identite
         case Drone
         of drone(Dim Num) then
-            if Dim == row then Answer = (Charact.postion.x == Num)
-            else Answer = (Charact.postion.y == Num)
+            if Dim == row then Answer = (Charact.position.x == Num)
+            else Answer = (Charact.position.y == Num)
             end
         else raise droneMisunderstoodInSayPassingDrone end
         end
@@ -435,7 +440,7 @@ in
     in
         {NewPort Stream Port}
         thread
-            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position passage:nil divePermission mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() posToAvoid:Input.map )}
+            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() posToAvoid:Input.map )}
             % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(2:3#4 3:1#1) lifeEnnemi:life(1:4 2:1) posToAvoid:Carte_Des_Mines)
         end
         Port
