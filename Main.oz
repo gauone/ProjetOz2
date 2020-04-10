@@ -608,6 +608,7 @@ in
       {StartSim}
    end
 
+   {System.show '-------------------- Fermeture de la main'}
 
 end
 

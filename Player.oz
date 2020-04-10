@@ -440,7 +440,7 @@ in
             [] sayAnswerDrone(Drone ID Answer) then {TreatStream T Charact} %normalement il faut faire qqchose, mais la j ignore mon drone
             [] sayAnswerSonar(ID Answer) then {TreatStream T Charact} %idem que ligne precedente
             [] sayDeath(ID) then {TreatStream T Charact}
-            [] sayDamagetaken(ID Damage LifeLeft) then {TreatStream T Charact}%il faut juste que je le ajoute dans la memoire de l AI
+            [] sayDamageTaken(ID Damage LifeLeft) then {TreatStream T Charact}%il faut juste que je le ajoute dans la memoire de l AI
             /*% version AI: note:il faut changer --move chargeItem fireItem fireMine-- en + des fct non-dummy pour avoir un AI malin
             [] sayMove(ID Direction) then {TreatStream T {SayMove ID Direction Charact}}
             [] sayDeath(ID) then {TreatStream T {SayDeath ID Charact}}
