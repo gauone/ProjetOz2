@@ -545,3 +545,61 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+declare
+
+fun{RemoveInd List I}
+    case List
+    of H|T then
+        if(I == 1) then
+            T
+        else
+            H|{RemoveInd T I-1}
+        end
+    end
+end
+
+local
+    List1 = [a b c d e f]
+    List2 = {RemoveInd List1 3}
+in
+    {Browse List2}
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+declare
+
+PPL = [p1 p2 p3 p4 p5]
+VJL = [1 1 0 1 0]
+
+/*
+ * Fonctions de calque de PPL sur VJL : 
+ * 
+ * Pre : |PPL| == |VJL|
+ * Post : 
+ *    PPL = [P1 P2 P3 P4]
+ *    Si VJL = [1 1 0 1]
+ *    Renvoi : PPL = [P1 P2 P4]
+ */
+fun{Ecrase PPL VJL}
+    case PPL
+    of Hp|Tp then
+        case VJL
+        of Hv|Tv then
+            if(Hv == 1) then
+                Hp|{Ecrase Tp Tv}
+            else
+                {Ecrase Tp Tv}
+            end
+        else
+            nil
+        end
+    else
+        nil
+    end
+end
+
+
+{Browse {Ecrase PPL VJL}}
