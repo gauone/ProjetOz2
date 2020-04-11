@@ -25,4 +25,10 @@ main : $(files)
 	/Applications/Mozart2.app/Contents/Resources/bin/ozc -c ../Main.oz
 	say "Fichier principal compilé"
 	/Applications/Mozart2.app/Contents/Resources/bin/ozengine Main.ozf
+
+relaunch :
+	/Applications/Mozart2.app/Contents/Resources/bin/ozengine Main.ozf
+
+help :
+	echo "\n\nall: tout compiler \n\nrun: tout compiler et lancer la main \n\nmain: compiler la main et la lancer \n\nrelaunch: relancer la main \n\nplayer: compiler tout les fichiers nécessaires à lancer mes tests sur player et lancer les tests \n\nftestplayer: compiler et lancer le fichier de test de player \n\nclean: bouger tout les .ozf\n"
 	

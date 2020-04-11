@@ -17,6 +17,7 @@ define
     FireItem
     WhereToFire
     WeaponAvailable
+    ChangeInMap
     FireMine
     SayMove
     SayMineOrMissileExplode
@@ -186,8 +187,6 @@ in
                             TupleItem
                             Item
                             FirePosition
-                            RemainingAfterward
-                            SubtractedList
                         in
                             %ici il faut changer pour que ce soit plus random ;p une maniere est de choisir l'item qui sait atteindre l ennemi avec sa portee propre
                             TupleItem = {List.nth Utilisable ( ({OS.rand} mod {List.length Utilisable}) + 1 ) } % du type mine#quantiteDeMine
@@ -197,20 +196,27 @@ in
                             else 
                                 FirePosition = pasDeFirePositionCarCeNestPasUnItemAvecUnePosition
                             end
-                            
+
                             if FirePosition == null then {ChoseItemAndCheckUtility {List.subtract Utilisable TupleItem}} %je supprime cet item de la liste des dispo et je recommence la selection d item
                             else
                                 case Item
-                                of mine then KindFire = mine(FirePosition) %choisi une position de mine random
-                                    RemainingAfterward = {Value.max (Charact.mine - Input.mine) 0}
-                                [] missile then KindFire = missile(FirePosition) %choisi une position de mine random potentielement sur toi meme ;p
-                                    RemainingAfterward = {Value.max (Charact.missile - Input.missile) 0}
-                                [] sonar then KindFire = sonar
-                                    RemainingAfterward = {Value.max (Charact.sonar - Input.sonar) 0}
-                                [] drone then KindFire = drone(row  (({OS.rand} mod Input.nRow) + 1) ) %ATTENTION TYPE PEUT-ETRE MAUVAIS!
-                                    RemainingAfterward = {Value.max (Charact.drone - Input.drone) 0}
+                                of mine then
+                                    KindFire = mine(FirePosition)
+                                    {Record.adjoinList Charact [mine#{Value.max (Charact.mine - Input.mine) 0} myMines#{ChangeInMap FirePosition Charact.myMines 9}]}
+
+                                [] missile then
+                                    KindFire = missile(FirePosition)
+                                    {Record.adjoinList Charact [missile#{Value.max (Charact.missile - Input.missile) 0} lastMissileLaunched#FirePosition]}%rappel FirePosition de type <position>
+
+                                [] sonar then
+                                    KindFire = sonar
+                                    {Record.adjoinAt Charact sonar {Value.max (Charact.sonar - Input.sonar) 0} }
+                                    
+                                [] drone then
+                                    KindFire = drone(row  (({OS.rand} mod Input.nRow) + 1) ) %ATTENTION TYPE PEUT-ETRE MAUVAIS!
+                                    {Record.adjoinAt Charact drone  {Value.max (Charact.drone - Input.drone) 0} }
+                                    
                                 end
-                                {Record.adjoinAt Charact Item RemainingAfterward}
                             end
                         end
                     end
@@ -221,11 +227,10 @@ in
         end
     end
 
-    % Choisi pour le moment une position random qui respecte la ManhattanDist et essaye d'eviter de
+    % Choisi pour le moment une position (pt(x:... y:...)) random qui respecte la ManhattanDist et essaye d'eviter de
     %   mettre ou on a deja mis des mines et evite de se donner des dommages a soit meme si c est un missile
     fun {WhereToFire Item Charact}
         local
-
             fun {GenerateFirePosition MaxDist MinDist IsMissile}
                 local
                     Absi
@@ -247,7 +252,7 @@ in
                                 % On regarde si ce nouveau pt est valide (meme bout de code que dans GenerateFirePosition sauf qu'on retient le Absi Ord qu on a recu de GenerateFirePosition)
                                 if IsMissile andthen ( {ManhattanDist Charact NewX NewY} < {Value.min 2 MinDist} orelse {DetectIn Input.map Input.nRow Input.nColumn NewX NewY} orelse {ManhattanDist Charact NewX NewY} > MaxDist )
                                     then {FindOtherFirePos NewX NewY} % missile: j ai pas envie de m envoyer un missile dessus ou sur une ile ou trop loin
-                                elseif {Not IsMissile} andthen ( {DetectIn Input.map Input.nRow Input.nColumn NewX NewY} orelse {DetectIn Charact.posToAvoid Input.nRow Input.nColumn NewX NewY} orelse {ManhattanDist Charact NewX NewY} < MinDist orelse {ManhattanDist Charact NewX NewY} > MaxDist )
+                                elseif {Not IsMissile} andthen ( {DetectIn Input.map Input.nRow Input.nColumn NewX NewY} orelse {DetectIn Charact.myMines Input.nRow Input.nColumn NewX NewY} orelse {ManhattanDist Charact NewX NewY} < MinDist orelse {ManhattanDist Charact NewX NewY} > MaxDist )
                                     then {FindOtherFirePos NewX NewY} %Mine: j ai pas envie de mettre une mine sur les iles ou sur les mines et je doit respecter les 2 bornes en len de Manhattan
                                 else pt(x:NewX y:NewY)
                                 end
@@ -262,7 +267,7 @@ in
 
                     if IsMissile andthen ( {ManhattanDist Charact Absi Ord} < {Value.min 2 MinDist} orelse {DetectIn Input.map Input.nRow Input.nColumn Absi Ord} orelse {ManhattanDist Charact Absi Ord} > MaxDist )
                         then {FindOtherFirePos Absi Ord} % missile: j ai pas envie de m envoyer un missile dessus ou sur une ile ou trop loin
-                    elseif {Not IsMissile} andthen ( {DetectIn Input.map Input.nRow Input.nColumn Absi Ord} orelse {DetectIn Charact.posToAvoid Input.nRow Input.nColumn Absi Ord} orelse {ManhattanDist Charact Absi Ord} < MinDist orelse {ManhattanDist Charact Absi Ord} > MaxDist )
+                    elseif {Not IsMissile} andthen ( {DetectIn Input.map Input.nRow Input.nColumn Absi Ord} orelse {DetectIn Charact.myMines Input.nRow Input.nColumn Absi Ord} orelse {ManhattanDist Charact Absi Ord} < MinDist orelse {ManhattanDist Charact Absi Ord} > MaxDist )
                         then {FindOtherFirePos Absi Ord} %Mine: j ai pas envie de mettre une mine sur les iles ou sur les mines et je doit respecter les 2 bornes en len de Manhattan
                     else pt(x:Absi y:Ord)
                     end
@@ -297,6 +302,32 @@ in
             end
         in
             {Loop Ammunition nil}
+        end
+    end
+
+    /*
+     * Fonction qui prends une valeur une position (pt(x:... y:...) ou X#Y) et une map et qui retourne la map avec la valeur mise a Val a la position
+     */
+    fun {ChangeInMap PT Map Val}
+        local
+            %Mets le I eme elem de List a Val (Ieme en commencant par 1).
+            fun {ChangeElemInList I Val List}
+                if I =< 0 then raise outOfBoundInchangeInMap end %utile si le y est trop petit
+                else
+                    case List
+                    of H|T then
+                        if I > 1 then H|{ChangeElemInList I-1 Val T}
+                        else Val|T
+                        end
+                    [] nil then raise outOfBoundInchangeInMap end %utile si le y est trop petit
+                    end
+                end
+            end
+        in
+            case PT
+            of pt(x:X y:Y) then {ChangeElemInList X {ChangeElemInList Y Val {List.nth Map X}} Map} %si le x est trop grand ou petit alors Nth renvoie une Missing else clause
+            [] X#Y then {ChangeElemInList X {ChangeElemInList Y Val {List.nth Map X}} Map}
+            end
         end
     end
 
@@ -428,7 +459,7 @@ in
             case H
             of initPosition(ID Position) then {TreatStream T {InitPosition ID Position Charact}}
             [] move(ID Position Direction) then {TreatStream T {Move ID Position Direction Charact}}
-            [] dive then {TreatStream T {Record.adjoinAt Charact divePermission true}}%autorise a nouveau a plonger
+            [] dive then {TreatStream T {Record.adjoinAt Charact divePermission true}} %autorise a nouveau a plonger
             [] chargeItem(ID KindItem) then {TreatStream T {ChargeItem ID KindItem Charact}}
             [] fireItem(ID KindFire) then {TreatStream T {FireItem ID KindFire Charact}}
             [] fireMine(ID Mine) then {TreatStream T {FireMine ID Mine Charact}}
@@ -463,8 +494,8 @@ in
     in
         {NewPort Stream Port}
         thread
-            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() posToAvoid:Input.map )}
-            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(2:3#4 3:1#1) lifeEnnemi:life(1:4 2:1) posToAvoid:Carte_Des_Mines)
+            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() myMines:Input.map lastMissileLaunched:(~3#~3) lastMineExplode:(~3#~3) )}
+            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(2:3#4 3:1#1) lifeEnnemi:life(1:4 2:1) myMines:Carte_Des_Mines)
         end
         Port
     end
