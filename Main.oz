@@ -76,7 +76,51 @@ define
          end
       end
    in
+      {System.show '-------------------- Lancement de SumList'}
       {SLacc List 0}
+   end
+
+
+   /*
+    * Renvoi la liste List sans l'indice I
+    */
+   fun{RemoveInd List I}
+      case List
+      of H|T then
+         if(I == 1) then
+               T
+         else
+               H|{RemoveInd T I-1}
+         end
+      end
+   end
+
+
+   /*
+    * Fonctions de calque de PPL sur VJL : 
+    * 
+    * Pre : |PPL| == |VJL|
+    * Post : 
+    *    PPL = [P1 P2 P3 P4]
+    *    Si VJL = [1 1 0 1]
+    *    Renvoi : PPL = [P1 P2 P4]
+    */
+   fun{Ecrase PPL VJL}
+      case PPL
+      of Hp|Tp then
+         case VJL
+         of Hv|Tv then
+               if(Hv == 1) then
+                  Hp|{Ecrase Tp Tv}
+               else
+                  {Ecrase Tp Tv}
+               end
+         else
+               nil
+         end
+      else
+         nil
+      end
    end
 
 
@@ -187,10 +231,13 @@ define
     */
    fun{InformMissile PPL FID MP VJL}
       local
-         MissileMessage
+         MissileMessage DeadAnswer
       in 
          case PPL
-         of Port|T then 
+         of Port|T then
+            {Send Port isDead(DeadAnswer)}
+            {Wait DeadAnswer}
+            if(DeadAnswer == false) then
                {Send Port sayMissileExplode(FID MP MissileMessage)}
                {Wait MissileMessage}
 
@@ -199,8 +246,13 @@ define
 
                   case MissileMessage
                   of sayDeath(id(color:ActualColor id:ActualId name:ActualName)) then % Note la mort d'un joueur
-                     {Send GUIP lifeUpdate(ActualId 0)}
-                     {Send GUIP removePlayer(ActualId)}
+                     {Send GUIP lifeUpdate(id(color:ActualColor id:ActualId name:ActualName) 0)}
+                     {System.show '-------------------- Death'}
+                     {System.show '-------------------- Mine Position : '}
+                     {Wait MP}
+                     {System.show MP}
+                     
+                     {Send GUIP removePlayer(id(color:ActualColor id:ActualId name:ActualName))}
                      {InformMissile T FID MP {AdjoinListAt VJL ActualId 0}}
                   [] sayDamageTaken(ActualId ActualDamage ActualLifeLeft) then
                      {System.show '-------------------- Damage Taken : '}
@@ -211,6 +263,9 @@ define
                else
                   {InformMissile T FID MP VJL}
                end
+            else
+               {InformMissile T FID MP VJL}
+            end
          else
             VJL
          end
@@ -230,28 +285,39 @@ define
     */
    fun{InformMine PPL MID MP SVJLM}
       local
-         MineMessage
+         MineMessage DeadAnswer
       in 
          case PPL
-         of Port|T then 
-            {Send Port sayMineExplode(MID MP MineMessage)}
-            {Wait MineMessage}
+         of Port|T then
+            {Send Port isDead(DeadAnswer)}
+            {Wait DeadAnswer}
+            if(DeadAnswer == false) then
+               {Send Port sayMineExplode(MID MP MineMessage)}
+               {Wait MineMessage}
 
-            if(MineMessage \= null) then
-               {Radio MineMessage}
+               if(MineMessage \= null) then
+                  {Radio MineMessage}
 
-               case MineMessage
-               of sayDeath(id(color:ActualColor id:ActualId name:ActualName)) then % Note la mort d'un joueur
-                  {Send GUIP lifeUpdate(ActualId 0)}
-                  {Send GUIP removePlayer(ActualId)}
-                  {InformMine T MID MP {AdjoinListAt SVJLM ActualId 0}}
-               [] sayDamageTaken(ActualId ActualDamage ActualLifeLeft) then
-                  {System.show '-------------------- Damage Taken : '}
-                  {System.show ActualLifeLeft} 
-                  {Send GUIP lifeUpdate(ActualId ActualLifeLeft)}
-                  {InformMine T MID MP SVJLM}                  
+                  case MineMessage
+                  of sayDeath(id(color:ActualColor id:ActualId name:ActualName)) then % Note la mort d'un joueur
+                     {System.show '-------------------- Death'}
+                     {System.show '-------------------- Mine Position : '}
+                     {Wait MP}
+                     {System.show MP}
+
+                     {Send GUIP lifeUpdate(id(color:ActualColor id:ActualId name:ActualName) 0)}
+                     {Send GUIP removePlayer(id(color:ActualColor id:ActualId name:ActualName))}
+                     {InformMine T MID MP {AdjoinListAt SVJLM ActualId 0}}
+                  [] sayDamageTaken(ActualId ActualDamage ActualLifeLeft) then
+                     {System.show '-------------------- Damage Taken : '}
+                     {System.show ActualLifeLeft} 
+                     {Send GUIP lifeUpdate(ActualId ActualLifeLeft)}
+                     {InformMine T MID MP SVJLM}                  
+                  end
+
+               else
+                  {InformMine T MID MP SVJLM}
                end
-
             else
                {InformMine T MID MP SVJLM}
             end
@@ -305,6 +371,8 @@ define
                      %{Radio sayDead(ID)} Jsp comment recuperer l'ID complet mais je pense que cette fonction n'est plus utile
                      {TBTActions T SJL {AdjoinListAt VJL Id 0} Id+1}
                   else
+
+                     {System.show '-------------------- Oui !'}
 
                      %%%%  -- Pt.1 --  %%%%
                      /*
@@ -412,6 +480,14 @@ define
                               {System.show '-------------------- Pt.7 : Missile'}
                               {Send GUIP explosion(FireId MissilePosition)}
 
+                              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                              %%%%
+                              %%%%     Morts potentiels
+                              %%%%
+                              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                              {System.show '-------------------- Lancement InforMissile'}
+
                               /*
                                  * Modification de VJL sans relancer la proc{TBTActions ...} m'oblige a faire des variables locales
                                  * J'utilise une function plutot qu'une boucle for pour les memes raisons
@@ -425,15 +501,19 @@ define
 
                               for Port in PlayerPortList do
                                  local
-                                    PassingId PassingAnswer
-                                 in 
-                                    {Send Port sayPassingDrone(drone(Dim Num) PassingId PassingAnswer)}
-                                    {Wait PassingId}
-                                    {Wait PassingAnswer}
+                                    PassingId PassingAnswer DeadAnswer
+                                 in
+                                    {Send Port isDead(DeadAnswer)}
+                                    {Wait DeadAnswer}
+                                    if(DeadAnswer == false) then
+                                       {Send Port sayPassingDrone(drone(Dim Num) PassingId PassingAnswer)}
+                                       {Wait PassingId}
+                                       {Wait PassingAnswer}
 
-                                    {System.show '-------------------- Pt.7 : sayPassingDrone binded'} 
+                                       {System.show '-------------------- Pt.7 : sayPassingDrone binded'} 
 
-                                    {Send PlayerPort sayAnswerDrone(drone(Dim Num) PassingId PassingAnswer)}
+                                       {Send PlayerPort sayAnswerDrone(drone(Dim Num) PassingId PassingAnswer)}
+                                    end
                                  end
                               end
 
@@ -446,15 +526,19 @@ define
 
                               for Port in PlayerPortList do
                                  local
-                                    SonarId SonarPos
-                                 in 
-                                    {Send Port sayPassingSonar(SonarId SonarPos)}
-                                    {Wait SonarId}
-                                    {Wait SonarPos}
+                                    SonarId SonarPos DeadAnswer
+                                 in
+                                    {Send Port isDead(DeadAnswer)}
+                                    {Wait DeadAnswer}
+                                    if(DeadAnswer == false) then
+                                       {Send Port sayPassingSonar(SonarId SonarPos)}
+                                       {Wait SonarId}
+                                       {Wait SonarPos}
 
-                                    {System.show '-------------------- Pt.7 : sayPassingSonar binded'} 
+                                       {System.show '-------------------- Pt.7 : sayPassingSonar binded'} 
 
-                                    {Send PlayerPort sayAnswerSonar(SonarId SonarPos)}
+                                       {Send PlayerPort sayAnswerSonar(SonarId SonarPos)}
+                                    end
                                  end
                               end
 
@@ -477,26 +561,38 @@ define
 
                            {Send PlayerPort fireMine(MineId MinePosition)} % J'envoi la requete, le player est honette, si il n'a pas de mine
                            {Wait MineId} % Tjrs bound
-                           {Wait MinePosition} % MinePosition : <mine> ::= null | <position>. Si null, pas d'explosion
 
-                           if(MinePosition \= null) then 
+                           if(MineId \= null) then % En cas de suicide par un missile
+                              {Wait MinePosition} % MinePosition : <mine> ::= null | <position>. Si null, pas d'explosion
 
-                              {System.show '-------------------- Lancement InforMine'}
-                              {Send GUIP explosion(MineId MinePosition)}
-                              {Send GUIP removeMine(MineId MinePosition)}
+                              if(MinePosition \= null) then 
 
-                              /*
-                              * Modification de VJL sans relancer la proc{TBTActions ...} m'oblige a faire des variables locales
-                              * J'utilise une function plutot qu'une boucle for pour les memes raisons
-                              */
-                              SubVJLMine = {InformMine PlayerPortList MineId MinePosition SubVJLMissile}
+                                 {System.show '-------------------- Lancement InforMine'}
+                                 {Send GUIP explosion(MineId MinePosition)}
+                                 {Send GUIP removeMine(MineId MinePosition)}
 
-                              {System.show '-------------------- Terminaison InforMine'}
-                              {System.show '-------------------- SubVJLMine : '}
-                              {Wait SubVJLMine}
-                              {System.show SubVJLMine}
+                                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                 %%%%
+                                 %%%%     Morts potentiels
+                                 %%%%
+                                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+                                 /*
+                                 * Modification de VJL sans relancer la proc{TBTActions ...} m'oblige a faire des variables locales
+                                 * J'utilise une function plutot qu'une boucle for pour les memes raisons
+                                 */
+                                 SubVJLMine = {InformMine PlayerPortList MineId MinePosition SubVJLMissile}
+
+                                 {System.show '-------------------- Terminaison InforMine'}
+                                 {System.show '-------------------- SubVJLMine : '}
+                                 {Wait SubVJLMine}
+                                 {System.show SubVJLMine}
+
+                              else
+                                 SubVJLMine = SubVJLMissile % Comme le recursion finale prend d'office SubVJLMine
+                              end
                            else
+                              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%ù Je pense que c'est ca en suicide
                               SubVJLMine = SubVJLMissile % Comme le recursion finale prend d'office SubVJLMine
                            end
 
@@ -515,7 +611,7 @@ define
                   end
                end
             else
-               if({SumList VJL} == 1) then
+               if({SumList VJL} < 2) then % Parfois les 2 derniers joueurs meurent en meme temps
                   {System.show '-------------------- Fermeture de la partie'}
                else
                   {System.show '-------------------- Fin du Round'}
@@ -530,6 +626,7 @@ define
 
                   {System.show '-------------------- Lancement nouveau Round'}
 
+                  % Je peux pas {Ecrase PlayerPortList VJL} sinon je perds la concordance entre mon Id local et la PPL 
                   {TBTActions PlayerPortList SJL VJL 1} % Chaque jouer a joue, nouveau round
                end
             end
