@@ -18,12 +18,18 @@ define
     WhereToFire
     WeaponAvailable
     ChangeInMap
+    ChangeListinMap
     FireMine
     SayMove
     SayMineOrMissileExplode
     SayPassingDrone
     SayPassingSonar
     SayDeath
+    BFS
+    NewQueue
+    Enqueue
+    Dequeue
+    IsEmpty
     TreatStream
     StartPlayer
 in
@@ -43,7 +49,7 @@ in
     end
 
 
-    % Retourne true si le point (X Y) est une ile. Si outOfBounds alors vrai aussi.
+    % Retourne true si le point (X Y) est > 0. Si outOfBounds alors vrai aussi.
     fun {DetectIn Matrice NRow NColumn X Y}
         if X > NRow orelse Y > NColumn orelse X =< 0 orelse Y =< 0 then true
         else
@@ -331,6 +337,16 @@ in
         end
     end
 
+    /*
+     * fonctionnement similaire a ChangeInMap sauf que ce prends une liste de positions (de type X#Y ou pt(x: y: )
+     */
+    fun {ChangeListinMap PosList Map Val}
+        case PosList
+        of H|T then {ChangeListinMap T {ChangeInMap H Map Val} Val}
+        else Map
+        end
+    end
+
 
     %enonce If a mine was already placed before, the player may decide to make one exploded
     fun {FireMine ID Mine Charact}
@@ -446,7 +462,129 @@ in
         end
     end
 
-    /***********************************************
+    /*
+     * BFS trouve le chemin le plus court pour se rapprocher a distance de tir quand on connait la position d'un ennemi :) /!\ va aller dessus alors qu on veut s arreter avant
+     * (X Y) est la position de depart. La liste est une liste contenant les position supposees des differents ennemis
+     */
+    fun {BFS X Y LIst}
+        local  
+            fun {NewMap SizeX SizeY InitValue}
+                local
+                    fun {FillList Value N}
+                        if N =< 0 then nil
+                        else
+                            Value|{FillList Value N-1}
+                        end
+                    end
+                in
+                    {FillList {FillList InitValue SizeY} SizeX}
+                end
+            end
+
+            fun {Loop MyQueue Path}
+                if {IsEmpty MyQueue} then Path
+                else
+                    case {Dequeue MyQueue}
+                    of X#Y then
+                        {Loop MyQueue {ChangeListinMap {InnerLoop X Y [~1#0 1#0 0#~1 0#1] MyQueue Path nil} Path X#Y}}
+                    end
+                end
+            end
+
+            fun {NotPosIn Matrice NRow NColumn X Y}
+                %note, dans {List.nth liste I} index commence a 1 et pas a 0
+                case {List.nth {List.nth Matrice X } Y}
+                of A#B then false
+                else true
+                end
+            end
+
+            %retourne la ou on doit ajouter la position dans Path
+            fun {InnerLoop X Y DeltaList MyQueue Path Acc}
+                case DeltaList
+                of Delta|T then
+                    if {Not {DetectIn Input.map Input.nRow Input.nColumn X+Delta.1 Y+Delta.2}} andthen {NotPosIn Path Input.nRow Input.nColumn X+Delta.1 Y+Delta.2} then %si pas ile pas OutOfBound et pas deja fait
+                        {Enqueue MyQueue (X+Delta.1)#(Y+Delta.2)}
+                        {InnerLoop X Y T MyQueue Path (X+Delta.1)#(Y+Delta.2)|Acc}
+                    else
+                        {InnerLoop X Y T MyQueue Path Acc}
+                    end
+                else
+                    Acc
+                end
+            end
+
+            Path MyQueue NewMap
+        in
+            MyQueue = {NewQueue}
+
+            Path = {ChangeInMap X#Y {NewMap Input.nRow Input.nColumn sOs} X#Y}%le pt de depart est mis a un le reste est a zero
+
+            {Enqueue MyQueue X#Y}%le pt de depart est mis la queue pour etre sortit directement apres et commencer la recurssion
+
+            {Loop MyQueue Path}
+        end
+    end
+
+
+    /*
+    * Merci le dernier TP9 :p Ceci est une Queue ayant le meme comportement qu en java
+    */ 
+    fun {NewQueue}
+        local
+            proc {MsgLoop S1 State}
+                case S1
+                    of Msg|S2 then {MsgLoop S2 {ChangeState Msg State}}
+                    [] nil then skip
+                end
+            end
+
+            fun {ChangeState Msg State}
+                case Msg
+                    of enqueue(X) then {Append State [X]}
+                    [] dequeue(?X) then
+                        if State==nil then X=nil nil
+                        else X=State.1 State.2
+                        end
+                    [] isEmpty(X) then X=(State==nil) State
+                end
+            end
+            
+            Stream
+        in
+            thread {MsgLoop Stream nil} end
+            {NewPort Stream} %le port est retourne
+        end
+    end
+        
+    /*
+     * Je ne te fais pas un dessin pour les spec de ces 3 fcts...
+    */
+    proc {Enqueue Q X}
+    {Send Q enqueue(X)}
+    end
+
+    fun {Dequeue Q}
+        local
+            X
+        in
+            {Send Q dequeue(X)}
+            {Wait X}
+            X
+        end
+    end
+
+    fun {IsEmpty Q}
+        local
+            X
+        in
+            {Send Q isEmpty(X)}
+            {Wait X}
+            X
+        end
+    end
+    
+    /*********************************************** 
     Lancement et traitement de la stream du player
     ***********************************************/
 
