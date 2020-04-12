@@ -45,7 +45,9 @@ in
 
 %%%% Style of game %%%%
 
-   IsTurnByTurn = true
+   %IsTurnByTurn = true
+
+   IsTurnByTurn = false
 
 %%%% Description of the map %%%%
 
@@ -59,20 +61,27 @@ in
           [0 0 0 0 0 0 0 0 0 0]
           [0 0 0 0 0 0 0 0 0 0]
           [0 0 0 1 0 0 1 1 0 0]
-          [0 0 1 1 0 0 1 0 0 0]
+          [0 0 1 1 1 1 1 0 0 0]
           [0 0 0 0 0 0 0 0 0 0]
           [0 0 0 0 0 0 0 0 0 0]]
 
 %%%% Players description %%%%
 
-   NbPlayer = 4
-   Players = [player1 player2 player3 player4]
-   Colors = [red blue green black]
+   % NbPlayer = 4
+   % Players = [player1 player2 player3 player4]
+   % Colors = [red blue green black]
+
+   NbPlayer = 2
+   Players = [player1 player2]
+   Colors = [red blue]
 
 %%%% Thinking parameters (only in simultaneous) %%%%
 
-   ThinkMin = 500
-   ThinkMax = 3000
+   %ThinkMin = 500
+   %ThinkMax = 3000
+
+   ThinkMin = 50
+   ThinkMax = 100
 
 %%%% Surface time/turns %%%%
 

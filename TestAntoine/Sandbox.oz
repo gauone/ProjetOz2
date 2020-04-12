@@ -603,3 +603,79 @@ end
 
 
 {Browse {Ecrase PPL VJL}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+fun{TaFonction State} % doit retourner le nouveau state! Sinon c est un proc
+    local
+        NewVal
+    in
+        NewVal = State.valeur-1 
+        {AdjoinAt State valeur NewVal}
+    end
+end
+ 
+{NewPort Stream Port}
+ 
+fun{WatchStream Stream State}
+    case Stream
+    of H|T then
+        case H
+        of sayDeath(ID) then
+            {WatchStream T {TaFonction State}} % ou si c est un proc: {WatchStream T State}
+        [] faut autre chose si tu veux
+        else
+            {WatchStream T State} % ou retourner une erreur ou arreter
+        end
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+{NewPort Stream Port}
+ 
+fun{WatchStream Stream Players}
+    if(Players > 1) then 
+        case Stream
+        of H|T then
+            case H
+            of sayDeath(Id) then
+                {WatchStream T Players-1} % ou si c est un proc: {WatchStream T State}
+            else
+                raise illegalSayToSync end
+            end
+        end
+    else
+        fini
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+declare
+
+Terminaison
+
+proc{Turn Terminaison}
+    if({IsFree Terminaison}) then 
+        if(({OS.rand} mod 4) == 1) then
+            Terminaison = true
+        else
+            {Browse 'boucle'}
+            {Turn Terminaison}
+        end
+    else
+        {Browse 'fin de la game'}
+    end
+end
+
+{Turn Terminaison}
+
+
+
+{Browse {IsFree Terminaison}}
