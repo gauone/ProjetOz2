@@ -997,22 +997,12 @@ end
    
    ctrl+f {TBTActions PPL Id+1 {AdjoinListAt SJL Id (Input.turnSurface-1)}} : 
    Pas sur du Input.turnSurface-1... C'est car on dit qu'une fois a la surface on y a deja passe 1 tour
-
-   Ma procedure Radio, broadcast et envoi a la GUI en meme temps, ca pose probleme ? 
-
-   Dans le Pt.8, c'est la main qui doit verifier si le joueur a deja place une mine ? Ou j'envoi et le joueur est honnete
  
-   Joueur sous l'eau doit avoir surface ~1 \= -1
-
-   {Wait Id} et seulement Id quand on en attend plusieurs car un sub mort ne repond que ca ! 
-
-   ctrl+f %{Send GUIP lifeUpdate(ActualId Life)} Comment obtenir life ? : 
-   Je ne sais pas comment obtenir Life facilement... a pensez plus tard
 
  
 
+   Partie a 5 sur un grnad plateau boucle a la fin jsp pq :/
 
-   Trouver un moyen de finir le thread d'un joueur mort
 
 
 

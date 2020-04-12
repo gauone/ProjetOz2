@@ -54,22 +54,22 @@ in
    NRow = 10
    NColumn = 10
 
-   Map = [[0 0 0 0 0 0 0 0 0 0]
-          [0 0 0 0 0 0 0 0 0 0]
-          [0 0 0 1 1 0 0 0 0 0]
-          [0 0 1 1 0 0 1 0 0 0]
-          [0 0 0 0 0 0 0 0 0 0]
-          [0 0 0 0 0 0 0 0 0 0]
-          [0 0 0 1 0 0 1 1 0 0]
-          [0 0 1 1 1 1 1 0 0 0]
-          [0 0 0 0 0 0 0 0 0 0]
-          [0 0 0 0 0 0 0 0 0 0]]
+   Map = [[0 0 0 0 0 0 0 0 0 0 ]
+          [0 1 1 1 0 0 0 0 0 0 ]
+          [0 0 0 0 0 0 1 1 0 0 ]
+          [0 0 0 0 0 1 1 0 0 0 ]
+          [0 0 0 1 1 1 1 0 0 0 ]
+          [0 0 0 0 0 0 0 0 0 0 ]
+          [0 0 0 1 1 0 0 0 1 0 ]
+          [0 0 0 0 1 0 0 0 1 0 ]
+          [0 0 0 0 1 0 0 0 1 0 ]
+          [0 0 0 0 0 0 0 0 0 0 ]]
 
 %%%% Players description %%%%
 
-   % NbPlayer = 4
-   % Players = [player1 player2 player3 player4]
-   % Colors = [red blue green black]
+   % NbPlayer = 6
+   % Players = [player1 player2 player3 player4 player5 player6]
+   % Colors = [red green black blue white yellow]
 
    NbPlayer = 3
    Players = [player1 player2 player3]
@@ -80,8 +80,8 @@ in
    %ThinkMin = 500
    %ThinkMax = 3000
 
-   ThinkMin = 50
-   ThinkMax = 100
+   ThinkMin = 20
+   ThinkMax = 50
 
 %%%% Surface time/turns %%%%
 
@@ -89,7 +89,7 @@ in
 
 %%%% Life %%%%
 
-   MaxDamage = 3
+   MaxDamage = 2
 
 %%%% Number of load for each item %%%%
 
@@ -100,10 +100,10 @@ in
 
 %%%% Distances of placement %%%%
 
-   MinDistanceMine = 1
-   MaxDistanceMine = 2
-   MinDistanceMissile = 1
-   MaxDistanceMissile = 4
+   MinDistanceMine = 3
+   MaxDistanceMine = 5
+   MinDistanceMissile = 3
+   MaxDistanceMissile = 5
 
 %%%% Waiting time for the GUI between each effect %%%%
 

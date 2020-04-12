@@ -31,8 +31,63 @@ define
 	DrawMap
 
 	StateModification
+	Explosion
 
 	UpdateLife
+
+
+   /**************************************
+    * Rajouts Graphisme
+	*
+	* Source : https://0x72.itch.io/dungeontileset-ii
+	* All rights reserved to "0x72"
+	* 
+    *************************************/
+
+   % C'est le floor car c'est la ou on peut bouger
+   WaterIMG = {QTk.newImage photo(url:'img/floor.png' height:0 width:0)}
+
+   % C'est les spikes car on ne peut pas y bouger
+   IslandIMG = {QTk.newImage photo(url:'img/spikes.png' height:0 width:0)}
+
+   WallIMG = {QTk.newImage photo(url:'img/wall.png' height:0 width:0)}
+
+   GreenPlayer = {QTk.newImage photo(url:'img/player_green.png' height:0 width:0)}
+   BluePlayer  = {QTk.newImage photo(url:'img/player_blue.png' height:0 width:0)}
+   RedPlayer   = {QTk.newImage photo(url:'img/player_red.png' height:0 width:0)}
+   BlackPlayer = {QTk.newImage photo(url:'img/player_black.png' height:0 width:0)}
+   WhitePlayer = {QTk.newImage photo(url:'img/player_white.png' height:0 width:0)}
+   YellowPlayer = {QTk.newImage photo(url:'img/player_yellow.png' height:0 width:0)}
+
+   BluePt    = {QTk.newImage photo(url:'img/floor_blue.png'   height:0 width:0)}
+   RedPt     = {QTk.newImage photo(url:'img/floor_red.png'    height:0 width:0)}
+   GreenPt   = {QTk.newImage photo(url:'img/floor_green.png'  height:0 width:0)}
+   WhitePt   = {QTk.newImage photo(url:'img/floor_white.png'  height:0 width:0)}
+   BlackPt   = {QTk.newImage photo(url:'img/floor_black.png'  height:0 width:0)}
+   YellowPt  = {QTk.newImage photo(url:'img/floor_yellow.png'  height:0 width:0)}
+
+   Bomb1  = {QTk.newImage photo(url:'img/bomb1.png' height:0 width:0)}
+   Bomb2  = {QTk.newImage photo(url:'img/bomb2.png' height:0 width:0)}
+   Bomb3  = {QTk.newImage photo(url:'img/bomb3.png' height:0 width:0)}
+   Bomb4  = {QTk.newImage photo(url:'img/bomb4.png' height:0 width:0)}
+   Bomb5  = {QTk.newImage photo(url:'img/bomb5.png' height:0 width:0)}
+   Bomb6  = {QTk.newImage photo(url:'img/bomb6.png' height:0 width:0)}
+   Bomb7  = {QTk.newImage photo(url:'img/bomb7.png' height:0 width:0)}
+   Bomb8  = {QTk.newImage photo(url:'img/bomb8.png' height:0 width:0)}
+   Bomb9  = {QTk.newImage photo(url:'img/bomb9.png' height:0 width:0)}
+   Bomb10 = {QTk.newImage photo(url:'img/bomb10.png' height:0 width:0)}
+   Bomb11 = {QTk.newImage photo(url:'img/bomb11.png' height:0 width:0)}
+   Bomb12 = {QTk.newImage photo(url:'img/bomb12.png' height:0 width:0)}
+
+   MineIMG = {QTk.newImage photo(url:'img/mine.png' height:0 width:0)}
+
+
+
+
+
+
+
+
 in
 
 %%%%% Build the initial window and set it up (call only once)
@@ -47,21 +102,21 @@ in
 		{Window show}
 
 		% configure rows and set headers
-		{Grid rowconfigure(1 minsize:50 weight:0 pad:5)}
+		{Grid rowconfigure(1 minsize:50 weight:0 pad:0)}
 		for N in 1..NRow do
-			{Grid rowconfigure(N+1 minsize:50 weight:0 pad:5)}
+			{Grid rowconfigure(N+1 minsize:50 weight:0 pad:0)}
 			{Grid configure({Label N} row:N+1 column:1 sticky:wesn)}
 		end
 		% configure columns and set headers
-		{Grid columnconfigure(1 minsize:50 weight:0 pad:5)}
+		{Grid columnconfigure(1 minsize:50 weight:0 pad:0)}
 		for N in 1..NColumn do
-			{Grid columnconfigure(N+1 minsize:50 weight:0 pad:5)}
+			{Grid columnconfigure(N+1 minsize:50 weight:0 pad:0)}
 			{Grid configure({Label N} row:1 column:N+1 sticky:wesn)}
 		end
 		% configure scoreboard
-		{GridScore rowconfigure(1 minsize:50 weight:0 pad:5)}
+		{GridScore rowconfigure(1 minsize:50 weight:0 pad:0)}
 		for N in 1..(Input.nbPlayer) do
-			{GridScore columnconfigure(N minsize:50 weight:0 pad:5)}
+			{GridScore columnconfigure(N minsize:50 weight:0 pad:0)}
 		end
 
 		{DrawMap Grid}
@@ -70,13 +125,13 @@ in
 	end
 
 %%%%% Squares of water and island
-	Squares = square(0:label(text:"" width:1 height:1 bg:c(102 102 255))
-			 1:label(text:"" borderwidth:5 relief:raised width:1 height:1 bg:c(153 76 0))
-			)
+	Squares = square(0:label(image:WaterIMG height:1 width:1)
+					 1:label(image:IslandIMG height:1 width:1)
+			        )
 
 %%%%% Labels for rows and columns
 	fun{Label V}
-		label(text:V borderwidth:5 relief:raised bg:c(255 51 51) ipadx:5 ipady:5)
+		label(image : WallIMG text:V)
 	end
 
 %%%%% Function to draw the map
@@ -108,8 +163,21 @@ in
 		pt(x:X y:Y) = Position
 		id(id:Id color:Color name:_) = ID
 
-		LabelSub = label(text:"S" handle:Handle borderwidth:5 relief:raised bg:Color ipadx:5 ipady:5)
-		LabelScore = label(text:Input.maxDamage borderwidth:5 handle:HandleScore relief:solid bg:Color ipadx:5 ipady:5)
+		case Color of 'yellow' then
+				LabelSub = label(image:YellowPlayer handle:Handle height:1 width:1) 
+			[] 'red'            then
+				LabelSub = label(image:RedPlayer handle:Handle height:1 width:1)
+			[] 'green'          then
+				LabelSub = label(image:GreenPlayer handle:Handle height:1 width:1)
+			[] 'black'          then
+				LabelSub = label(image:BlackPlayer handle:Handle height:1 width:1)
+			[] 'blue'           then
+				LabelSub = label(image:BluePlayer handle:Handle height:1 width:1)
+			[] 'white'          then
+				LabelSub = label(image:WhitePlayer handle:Handle height:1 width:1)
+		end	
+
+      	LabelScore = label(text:Input.maxDamage borderwidth:5 handle:HandleScore relief:solid bg:Color ipadx:5 ipady:5)
 		HandlePath = {DrawPath Grid Color X Y}
 		{Grid.grid configure(LabelSub row:X+1 column:Y+1 sticky:wesn)}
 		{Grid.score configure(LabelScore row:1 column:Id sticky:wesn)}
@@ -139,7 +207,7 @@ in
 			in
 			guiPlayer(id:ID score:HandleScore submarine:Handle mines:Mine path:Path) = State
 			pt(x:X y:Y) = Position
-			LabelMine = label(text:"M" handle:HandleMine borderwidth:5 relief:raised bg:ID.color ipadx:5 ipady:5)
+			LabelMine = label(image:MineIMG handle:HandleMine height:1 width:1)
 			{Grid.grid configure(LabelMine row:X+1 column:Y+1)}
 			{HandleMine 'raise'()}
 			{Handle 'raise'()}
@@ -172,13 +240,25 @@ in
 		end
 	end
 	
-	fun{DrawPath Grid Color X Y}
-		Handle LabelPath
-	in
-		LabelPath = label(text:"" handle:Handle bg:Color)
-		{Grid.grid configure(LabelPath row:X+1 column:Y+1)}
-		Handle
-	end
+   fun{DrawPath Grid Color X Y}
+      Handle Label
+   in
+      case Color of 'blue' then
+         Label = label(image:BluePt   handle:Handle height:1 width:1) 
+      [] 'yellow' then
+         Label = label(image:YellowPt handle:Handle height:1 width:1)
+      [] 'white'  then
+         Label = label(image:WhitePt  handle:Handle height:1 width:1)
+      [] 'red'    then
+         Label = label(image:RedPt    handle:Handle height:1 width:1)
+      [] 'black'  then
+         Label = label(image:BlackPt  handle:Handle height:1 width:1)
+      [] 'green'  then
+         Label = label(image:GreenPt  handle:Handle height:1 width:1)
+      end
+      {Grid.grid configure(Label row:X+1 column:Y+1 sticky:wesn)}
+      Handle
+   end
 	
 	proc{RemoveItem Grid Handle}
 		{Grid.grid forget(Handle)}
@@ -238,6 +318,69 @@ in
 		end
 	end
 
+   proc{Explosion ID Position Grid}
+         local X Y HandleBomb1 HandleBomb2 HandleBomb3 HandleBomb4 HandleBomb5 HandleBomb6 HandleBomb7 HandleBomb8 HandleBomb9 LabelBomb1 LabelBomb2 LabelBomb3 LabelBomb4 LabelBomb5 LabelBomb6 LabelBomb7 LabelBomb8 LabelBomb9 in
+            pt(x:X y:Y) = Position
+            LabelBomb1 = label(image:Bomb1 handle:HandleBomb1 height:1 width:1)
+            {Grid.grid configure(LabelBomb1 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb1 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb1)}
+
+            LabelBomb2 = label(image:Bomb2 handle:HandleBomb2 height:1 width:1)
+            {Grid.grid configure(LabelBomb2 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb2 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb2)}
+
+            LabelBomb3 = label(image:Bomb3 handle:HandleBomb3 height:1 width:1)
+            {Grid.grid configure(LabelBomb3 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb3 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb3)}
+
+            LabelBomb4 = label(image:Bomb4 handle:HandleBomb4 height:1 width:1)
+            {Grid.grid configure(LabelBomb4 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb4 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb4)}
+
+            LabelBomb5 = label(image:Bomb5 handle:HandleBomb5 height:1 width:1)
+            {Grid.grid configure(LabelBomb5 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb5 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb5)}
+
+            LabelBomb6 = label(image:Bomb6 handle:HandleBomb6 height:1 width:1)
+            {Grid.grid configure(LabelBomb6 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb6 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb6)}
+
+            LabelBomb7 = label(image:Bomb7 handle:HandleBomb7 height:1 width:1)
+            {Grid.grid configure(LabelBomb7 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb7 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb7)}
+
+            LabelBomb8 = label(image:Bomb8 handle:HandleBomb8 height:1 width:1)
+            {Grid.grid configure(LabelBomb8 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb8 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb8)}
+
+            LabelBomb9 = label(image:Bomb9 handle:HandleBomb9 height:1 width:1)
+            {Grid.grid configure(LabelBomb9 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb9 'raise'()}
+            {Delay 83}
+            {Grid.grid forget(HandleBomb9)}
+         end
+   end
+
+   proc{Sonared ID Grid}
+		skip
+   end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 	fun{StartWindow}
@@ -274,10 +417,12 @@ in
 		[] removePlayer(ID)|T then
 			{TreatStream T Grid {RemovePlayer Grid ID State}}
 		[] explosion(ID Position)|T then
+			{Explosion ID Position Grid}
 			{TreatStream T Grid State}
 		[] drone(ID Drone)|T then
 			{TreatStream T Grid State}
 		[] sonar(ID)|T then
+			{Sonared ID Grid}
 			{TreatStream T Grid State}
 		[] _|T then
 			{TreatStream T Grid State}
