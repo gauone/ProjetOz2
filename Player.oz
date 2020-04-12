@@ -21,10 +21,12 @@ define
     ChangeListinMap
     FireMine
     SayMove
+    MoveMapRight
     SayMineOrMissileExplode
     SayPassingDrone
     SayPassingSonar
     SayDeath
+    FillList
     BFS
     NewQueue
     Enqueue
@@ -208,7 +210,7 @@ in
                                 case Item
                                 of mine then
                                     KindFire = mine(FirePosition)
-                                    {Record.adjoinList Charact [mine#{Value.max (Charact.mine - Input.mine) 0} myMines#{ChangeInMap FirePosition Charact.myMines 9}]}
+                                    {Record.adjoinList Charact [mine#{Value.max (Charact.mine - Input.mine) 0} myMines#(FirePosition|Charact.myMines)]}
 
                                 [] missile then
                                     KindFire = missile(FirePosition)
@@ -258,7 +260,7 @@ in
                                 % On regarde si ce nouveau pt est valide (meme bout de code que dans GenerateFirePosition sauf qu'on retient le Absi Ord qu on a recu de GenerateFirePosition)
                                 if IsMissile andthen ( {ManhattanDist Charact NewX NewY} < {Value.min 2 MinDist} orelse {DetectIn Input.map Input.nRow Input.nColumn NewX NewY} orelse {ManhattanDist Charact NewX NewY} > MaxDist )
                                     then {FindOtherFirePos NewX NewY} % missile: j ai pas envie de m envoyer un missile dessus ou sur une ile ou trop loin
-                                elseif {Not IsMissile} andthen ( {DetectIn Input.map Input.nRow Input.nColumn NewX NewY} orelse {DetectIn Charact.myMines Input.nRow Input.nColumn NewX NewY} orelse {ManhattanDist Charact NewX NewY} < MinDist orelse {ManhattanDist Charact NewX NewY} > MaxDist )
+                                elseif {Not IsMissile} andthen ( {DetectIn Input.map Input.nRow Input.nColumn NewX NewY} orelse {List.member pt(x:NewX y:NewY) Charact.myMines} orelse {ManhattanDist Charact NewX NewY} < MinDist orelse {ManhattanDist Charact NewX NewY} > MaxDist )
                                     then {FindOtherFirePos NewX NewY} %Mine: j ai pas envie de mettre une mine sur les iles ou sur les mines et je doit respecter les 2 bornes en len de Manhattan
                                 else pt(x:NewX y:NewY)
                                 end
@@ -273,7 +275,7 @@ in
 
                     if IsMissile andthen ( {ManhattanDist Charact Absi Ord} < {Value.min 2 MinDist} orelse {DetectIn Input.map Input.nRow Input.nColumn Absi Ord} orelse {ManhattanDist Charact Absi Ord} > MaxDist )
                         then {FindOtherFirePos Absi Ord} % missile: j ai pas envie de m envoyer un missile dessus ou sur une ile ou trop loin
-                    elseif {Not IsMissile} andthen ( {DetectIn Input.map Input.nRow Input.nColumn Absi Ord} orelse {DetectIn Charact.myMines Input.nRow Input.nColumn Absi Ord} orelse {ManhattanDist Charact Absi Ord} < MinDist orelse {ManhattanDist Charact Absi Ord} > MaxDist )
+                    elseif {Not IsMissile} andthen ( {DetectIn Input.map Input.nRow Input.nColumn Absi Ord} orelse {List.member pt(x:Absi y:Ord) Charact.myMines} orelse {ManhattanDist Charact Absi Ord} < MinDist orelse {ManhattanDist Charact Absi Ord} > MaxDist )
                         then {FindOtherFirePos Absi Ord} %Mine: j ai pas envie de mettre une mine sur les iles ou sur les mines et je doit respecter les 2 bornes en len de Manhattan
                     else pt(x:Absi y:Ord)
                     end
@@ -378,6 +380,7 @@ in
                 Mouvements = [north#~1#0 south#1#0 east#0#1 west#0#~1]
                 DeltaX
                 DeltaY
+                NewPosIdNum
             in
                 if {List.member IdNum Connu} then
                     for Mvt in Mouvements do
@@ -387,10 +390,34 @@ in
                         end
                     end
                     {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum (Charact.posEnnemi.1+DeltaX)#(Charact.posEnnemi.2+DeltaY)}}
-                else Charact %je connais pas sa position... Dans le meilleur des cas je peux reduire le champ de recherche. Pour le moment je fais rien
+                else Charact {FillList {FillList 1 Input.nColumn} Input.nRow}%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% a decaler
                 end
             end
         end
+    end
+
+    % decale la matrice vers la droite-> mets des 0 et premiere colonne et la derniere colonne est supprimee
+    fun {MoveMapRight Map}
+        local
+            fun {DropLast Liste}
+                case Liste
+                of H|nil then nil
+                [] H|T then H|{DropLast T}
+                [] nil then nil
+                else raise wrongArgumentException end
+                end
+            end
+        in
+            case Map
+            of H|T then {DropLast 0|H}|{MoveMapRight T}
+            [] nil then nil
+            else raise wrongArgumentException end
+            end
+        end
+    end
+
+    fun {MoveMapDown Map}
+        if {List.length Map }%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%JE SUIS ICI
     end
 
 
@@ -462,6 +489,14 @@ in
         end
     end
 
+    % retroune une liste de taille N remplie avec la valeur N
+    fun {FillList Value N}
+        if N =< 0 then nil
+        else
+            Value|{FillList Value N-1}
+        end
+    end
+
     /*
      * BFS trouve le chemin le plus court pour se rapprocher a distance de tir quand on connait la position d'un ennemi :) /!\ va aller dessus alors qu on veut s arreter avant
      * (X Y) est la position de depart. La liste est une liste contenant les position supposees des differents ennemis. Le chemin retourne est une liste commencant par la
@@ -469,17 +504,9 @@ in
      */
     fun {BFS X Y Liste}
         local  
+            % cree une matrice de taille (SizeX sizeY) remplie de InitValue 
             fun {NewMap SizeX SizeY InitValue}
-                local
-                    fun {FillList Value N}
-                        if N =< 0 then nil
-                        else
-                            Value|{FillList Value N-1}
-                        end
-                    end
-                in
-                    {FillList {FillList InitValue SizeY} SizeX}
-                end
+               {FillList {FillList InitValue SizeY} SizeX}
             end
 
             fun {Loop MyQueue Path}
@@ -648,8 +675,8 @@ in
     in
         {NewPort Stream Port}
         thread
-            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() myMines:Input.map lastMissileLaunched:(~3#~3) lastMineExplode:(~3#~3) )}
-            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(2:3#4 3:1#1) lifeEnnemi:life(1:4 2:1) myMines:Carte_Des_Mines)
+            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() myMines:nil lastMissileLaunched:(~3#~3) lastMineExplode:(~3#~3) )}
+            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(2:matrice1 3:matrice2(1=possible 0=pas la)) lifeEnnemi:life(1:4 2:1) myMines:ListeDesMines)
         end
         Port
     end

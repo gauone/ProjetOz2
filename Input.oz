@@ -71,9 +71,9 @@ in
    % Players = [player1 player2 player3 player4]
    % Colors = [red blue green black]
 
-   NbPlayer = 2
-   Players = [player1 player2]
-   Colors = [red blue]
+   NbPlayer = 3
+   Players = [player1 player2 player3]
+   Colors = [red blue white]
 
 %%%% Thinking parameters (only in simultaneous) %%%%
 
