@@ -464,9 +464,9 @@ in
 
     /*
      * BFS trouve le chemin le plus court pour se rapprocher a distance de tir quand on connait la position d'un ennemi :) /!\ va aller dessus alors qu on veut s arreter avant
-     * (X Y) est la position de depart. La liste est une liste contenant les position supposees des differents ennemis
+     * (X Y) est la position de depart. La liste est une liste contenant les position supposees des differents ennemis. Le chemin retourne est une liste commencant par la popsition actuelle.
      */
-    fun {BFS X Y LIst}
+    fun {BFS X Y Liste}
         local  
             fun {NewMap SizeX SizeY InitValue}
                 local
@@ -485,17 +485,12 @@ in
                 if {IsEmpty MyQueue} then Path
                 else
                     case {Dequeue MyQueue}
-                    of X#Y then
-                        {Loop MyQueue {ChangeListinMap {InnerLoop X Y [~1#0 1#0 0#~1 0#1] MyQueue Path nil} Path X#Y}}
+                    of X1#Y1 then
+                        if {List.member X1#Y1 Liste} then {ReversePath X1#Y1 Path X1#Y1|nil}
+                        else
+                            {Loop MyQueue {ChangeListinMap {InnerLoop X1 Y1 [~1#0 1#0 0#~1 0#1] MyQueue Path nil} Path X1#Y1}}
+                        end
                     end
-                end
-            end
-
-            fun {NotPosIn Matrice NRow NColumn X Y}
-                %note, dans {List.nth liste I} index commence a 1 et pas a 0
-                case {List.nth {List.nth Matrice X } Y}
-                of A#B then false
-                else true
                 end
             end
 
@@ -513,6 +508,26 @@ in
                     Acc
                 end
             end
+
+
+            fun {NotPosIn Matrice NRow NColumn X Y}
+                %note, dans {List.nth liste I} index commence a 1 et pas a 0
+                case {List.nth {List.nth Matrice X } Y}
+                of A#B then false
+                else true
+                end
+            end     
+
+            fun {ReversePath Pos Path Acc}
+                if Pos == X#Y then Acc % X#Y est le point de depart
+                else
+                    local
+                        NewPos = {List.nth {List.nth Path Pos.1 } Pos.2}
+                    in
+                        {ReversePath NewPos Path NewPos|Acc}
+                    end
+                end
+            end       
 
             Path MyQueue NewMap
         in
@@ -583,7 +598,7 @@ in
             X
         end
     end
-    
+
     /*********************************************** 
     Lancement et traitement de la stream du player
     ***********************************************/
