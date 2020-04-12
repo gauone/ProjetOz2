@@ -89,9 +89,9 @@ define
       fun{IPPLrec P C Id}
          case P#C
          of (Kind|T1)#(Color|T2) then
-               {PlayerManager.playerGenerator Kind Color Id}|{IPPLrec T1 T2 Id+1}
+            {PlayerManager.playerGenerator Kind Color Id}|{IPPLrec T1 T2 Id+1}
          else
-               nil
+            nil
          end
       end
    in
@@ -589,70 +589,32 @@ define
    SynS
 
    /*
-    * Simule la reflexion d'un joueur
-    */
-   proc{Reflexion}
-      {Delay Input.thinkMin + ({OS.rand} mod (Input.thinkMax - Input.thinkMin))}
-   end
-
-   /*
-    * Lance un thread par sous-marin
-    */
-   proc{ThreadParSub PPL} %Obs ?
-      case PPL
-      of Player|T then
-         thread 
-            {SActions Player} % Thread par sub (id = Id)
-         end
-         {ThreadParSub T} %Obs ?
-      [] nil then % Plus de joueurs
-         skip
-      end
-   end 
-
-   fun{ThreadSynchro Stream Players}
-      if(Players > 1) then 
-         case Stream
-         of H|T then
-            case H
-            of sayDeath(Id) then
-               {ThreadSynchro T Players-1} % ou si c est un proc: {WatchStream T State}
-            else
-               raise illegalSayToSync end
-            end
-         end
-      else
-         true
-      end
-   end
-
-   /*
     * Simultanee Actions : 
-    * PP = Port du joueur en cours % Utile
-    * SJ = SurfaceJoueur
+    * PP = Port du joueur en cours
+    * Id = Id du joueur en cours % Utile au debuggage uniquement
     */
-   proc{SActions PP} % Recursion sur les joueurs (ordre PlayerPortList est dans l'ordre des Ids)
+   proc{SActions PP Id} % Recursion sur les joueurs (ordre PlayerPortList est dans l'ordre des Ids)
       local
          SubVJLMissile SubVJLMine DeadAnswer MoveId MovePos MoveDir ChargeId ChargeItem FireId FireItem MineId MinePosition
       in
-         {System.show '-------------------- Debut du tour joueur'}
+         {System.show '-------------------- Debut du tour du joueur : '#Id}
 
          %%%%  -- Pt.0 --  %%%%
          /*
           * Verifie si la partie est termine et si le sous-marin est vivant
           */
 
-         {System.show '-------------------- Pt.0'}
+         {System.show '-------------------- Pt.0 : '#Id}
 
          if({IsFree SimTerminaison}) then 
+            {System.show '-------------------- Mort : '#Id}
+
 
             {Send PP isDead(DeadAnswer)}
             {Wait DeadAnswer}
-            if(DeadAnswer == true) then
-               {System.show '-------------------- Mort'}
-            else
+            if(DeadAnswer == false) then
 
-               {System.show '-------------------- Vivant'}
+               {System.show '-------------------- Vivant : '#Id}
 
                %%%%  -- Pt.1 --  %%%%
                /*
@@ -660,7 +622,7 @@ define
                * Envoie le message de plongee au sous-marin
                */
 
-               {System.show '-------------------- Pt.1'}
+               {System.show '-------------------- Pt.1 : '#Id}
 
                {Send PP dive}
 
@@ -669,7 +631,7 @@ define
                * Reflexion
                */
 
-               {System.show '-------------------- Pt.2 : Reflexion'}
+               {System.show '-------------------- Pt.2 : Reflexion : '#Id}
 
                {Reflexion}
 
@@ -679,7 +641,7 @@ define
                * Si la direction n'est pas surface : Pt.5
                */
 
-               {System.show '-------------------- Pt.3'}
+               {System.show '-------------------- Pt.3 : '#Id}
 
                {Send PP move(MoveId MovePos MoveDir)}
                {Wait MoveId}
@@ -692,13 +654,13 @@ define
                * L'informations que ce joueur a fait surface est diffusee par la radio.
                */
 
-               {System.show '-------------------- Pt.4'}
+               {System.show '-------------------- Pt.4 : '#Id}
 
                if(MoveDir == surface) then
                   {Radio saySurface(MoveId)}
                   {Send GUIP surface(MoveId)}
                   {Delay (Input.turnSurface*1000)}
-                  {SActions PP}
+                  {SActions PP Id}
                else
 
                   %%%%  -- Pt.5 --  %%%%
@@ -706,7 +668,7 @@ define
                   * La direction choisie est diffusee par la radio.
                   */
 
-                  {System.show '-------------------- Pt.5'}
+                  {System.show '-------------------- Pt.5 : '#Id}
                   
                   {Radio sayMove(MoveId MoveDir)}
                   {Send GUIP movePlayer(MoveId MovePos)}
@@ -716,7 +678,7 @@ define
                   * Reflexion
                   */
 
-                  {System.show '-------------------- Pt.6 : Reflexion'}
+                  {System.show '-------------------- Pt.6 : Reflexion : '#Id}
 
                   {Reflexion}
 
@@ -726,7 +688,7 @@ define
                   * Si la reponse contient des informations sur un nouveau item, l'information est diffusee par la radio.
                   */
 
-                  {System.show '-------------------- Pt.7'}
+                  {System.show '-------------------- Pt.7 : '#Id}
 
                   {Send PP chargeItem(ChargeId ChargeItem)}
                   {Wait ChargeId}
@@ -741,7 +703,7 @@ define
                   * Reflexion
                   */
 
-                  {System.show '-------------------- Pt.8 : Reflexion'}
+                  {System.show '-------------------- Pt.8 : Reflexion : '#Id}
 
                   {Reflexion}
 
@@ -751,7 +713,7 @@ define
                   * Si la reponse contient des informations sur un objet tire l'information est diffusee par la radio.
                   */
 
-                  {System.show '-------------------- Pt.9'}
+                  {System.show '-------------------- Pt.9 : '#Id}
 
                   {Send PP fireItem(FireId FireItem)}
                   {Wait FireId}
@@ -760,14 +722,14 @@ define
                   case FireItem
                   of mine(MinePosition) then 
 
-                     {System.show '-------------------- Pt.7 : Mine'} 
+                     {System.show '-------------------- Pt.9 : Mine : '#Id} 
 
                      {Radio sayMinePlaced(FireId)}
                      {Send GUIP putMine(FireId MinePosition)}
 
                   [] missile(MissilePosition) then
 
-                     {System.show '-------------------- Pt.7 : Missile'}
+                     {System.show '-------------------- Pt.9 : Missile : '#Id}
                      {Send GUIP explosion(FireId MissilePosition)}
 
                      for Port in PlayerPortList do
@@ -803,7 +765,7 @@ define
 
                   [] drone(Dim Num) then % drone(row <x>) / drone(column <y>)
 
-                     {System.show '-------------------- Pt.7 : Drone'} 
+                     {System.show '-------------------- Pt.9 : Drone : '#Id} 
                      {Send GUIP drone(FireId drone(Dim Num))}
 
                      for Port in PlayerPortList do
@@ -823,7 +785,7 @@ define
 
                   [] sonar then 
 
-                     {System.show '-------------------- Pt.7 : Sonar'}
+                     {System.show '-------------------- Pt.9 : Sonar : '#Id}
                      {Send GUIP sonar(FireId)}
 
                      for Port in PlayerPortList do
@@ -843,7 +805,7 @@ define
                      
                   else
 
-                     {System.show '-------------------- Pt.7 : Pas de tir'} % Pas d'item tire
+                     {System.show '-------------------- Pt.9 : Pas de tir : '#Id} % Pas d'item tire
 
                   end
 
@@ -852,7 +814,7 @@ define
                   * Reflexion
                   */
 
-                  {System.show '-------------------- Pt.10 : Reflexion'}
+                  {System.show '-------------------- Pt.10 : Reflexion : '#Id}
 
                   {Reflexion}
 
@@ -862,7 +824,7 @@ define
                   * Si la reponse contient des informations sur l'explosion une mine, l'information est diffusee par la radio.
                   */
 
-                  {System.show '-------------------- Pt.11'}
+                  {System.show '-------------------- Pt.11 : '#Id}
 
                   {Send PP fireMine(MineId MinePosition)}
                   {Wait MineId} % Tjrs bound
@@ -913,15 +875,61 @@ define
                   * Le tour est termine pour ce sous-marin
                   */
 
-                  {System.show '-------------------- Pt.12'}
-                  {System.show '-------------------- Fin du tour joueur'}
+                  {System.show '-------------------- Pt.12 : '#Id}
+                  {System.show '-------------------- Fin du tour joueur : '#Id}
 
-                  {SActions PP} % Recursion du tour pour le meme joueur
+                  {SActions PP Id} % Recursion du tour pour le meme joueur
                end
+            else
+               {System.show '-------------------- Sortie de Thread par DeadAnswer'}
             end
          else
             {System.show '-------------------- Sortie de Thread par SimTerminaison'}
          end
+      end
+      % {System.show '-------------------- Sortie de Thread'}
+      % Browse pas ca sinon quand le jeux se termine et qu'il y la retour vers les instances d'executions precedantes ca l'affiche plein de fois.
+   end
+
+   /*
+    * Simule la reflexion d'un joueur
+    */
+   proc{Reflexion}
+      {Delay Input.thinkMin + ({OS.rand} mod (Input.thinkMax - Input.thinkMin))}
+   end
+
+   /*
+    * Lance un thread par sous-marin
+    */
+   proc{ThreadParSub PPL Id} %Obs ?
+      case PPL
+      of Player|T then
+         thread 
+            {SActions Player Id} % Thread par sub (id = Id)
+         end
+         {ThreadParSub T Id+1} %Obs ?
+      [] nil then % Plus de joueurs
+         skip
+      end
+   end 
+
+   fun{ThreadSynchro Stream Players}
+      if(Players > 1) then 
+         case Stream
+         of H|T then
+            case H
+            of sayDeath(id(color:ActualColor id:ActualId name:ActualName)) then
+               {System.show '-------------------- Detection de mort de'#ActualId#'par ThreadSynchro. Il reste'#Players-1#'joueurs'}
+               {ThreadSynchro T Players-1} % Detection d'un mort
+            else
+               {ThreadSynchro T Players} % Personne n'est mort
+            end
+         else
+            raise illegalMessageInTheSyncStream end
+         end
+      else
+         {System.show '-------------------- Fermeture de ThreadSynchro'}
+         true
       end
    end
 
@@ -930,11 +938,14 @@ define
     */
    proc{StartSim}
       {NewPort SynS SynP}
-      thread SimTerminaison = {ThreadSynchro SynS Input.nbPlayer} end
-      {ThreadParSub PlayerPortList}
+      thread
+         SimTerminaison = {ThreadSynchro SynS Input.nbPlayer}
+         {System.show '-------------------- SimTerminaison est binded'}
+      end
+      {ThreadParSub PlayerPortList 1}
 
-      %%%%%%%%%%%%%%% Je sors des threads de joueurs mais j'arrive pas ici...
-
+      {Wait SimTerminaison}
+      {Delay 1000}
       {System.show '-------------------- Fin de la partie simultanee'}
    end
 
@@ -1000,8 +1011,6 @@ end
 
  
 
-
-   Id utile comme arg de SimuActions ?
 
    Trouver un moyen de finir le thread d'un joueur mort
 

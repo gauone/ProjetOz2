@@ -675,7 +675,15 @@ proc{Turn Terminaison}
 end
 
 {Turn Terminaison}
-
-
-
 {Browse {IsFree Terminaison}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+declare
+
+Id = 1
+    
+{Browse '-------------------- Debut du tour du joueur Id : '#Id}
+
