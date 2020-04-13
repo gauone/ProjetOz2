@@ -765,7 +765,8 @@ define
 
                   [] drone(Dim Num) then % drone(row <x>) / drone(column <y>)
 
-                     {System.show '-------------------- Pt.9 : Drone : '#Id} 
+                     {System.show '-------------------- Pt.9 : Drone (Id#Dim#Num): '#Id#Dim#Num}
+                     %{Delay 5000}
                      {Send GUIP drone(FireId drone(Dim Num))}
 
                      for Port in PlayerPortList do
@@ -1002,6 +1003,10 @@ end
  
 
    Partie a 5 sur un grnad plateau boucle a la fin jsp pq :/
+
+   Regler le probleme decart entre cases
+
+   supprimer le delai et gros print a drone sim
 
 
 

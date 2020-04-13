@@ -32,6 +32,8 @@ define
 
 	StateModification
 	Explosion
+	Sonared
+	Droned
 
 	UpdateLife
 
@@ -80,6 +82,9 @@ define
    Bomb12 = {QTk.newImage photo(url:'img/bomb12.png' height:0 width:0)}
 
    MineIMG = {QTk.newImage photo(url:'img/mine.png' height:0 width:0)}
+
+   DroneIMG = {QTk.newImage photo(url:'img/drone.png')}
+
 
 
 
@@ -319,67 +324,113 @@ in
 	end
 
    proc{Explosion ID Position Grid}
-         local X Y HandleBomb1 HandleBomb2 HandleBomb3 HandleBomb4 HandleBomb5 HandleBomb6 HandleBomb7 HandleBomb8 HandleBomb9 LabelBomb1 LabelBomb2 LabelBomb3 LabelBomb4 LabelBomb5 LabelBomb6 LabelBomb7 LabelBomb8 LabelBomb9 in
+         local X Y HandleBomb1 HandleBomb2 HandleBomb3 HandleBomb4 HandleBomb5 HandleBomb6 HandleBomb7 HandleBomb8 HandleBomb9 HandleBomb10 HandleBomb11 HandleBomb12 LabelBomb1 LabelBomb2 LabelBomb3 LabelBomb4 LabelBomb5 LabelBomb6 LabelBomb7 LabelBomb8 LabelBomb9 LabelBomb10 LabelBomb11 LabelBomb12 in
             pt(x:X y:Y) = Position
             LabelBomb1 = label(image:Bomb1 handle:HandleBomb1 height:1 width:1)
             {Grid.grid configure(LabelBomb1 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb1 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb1)}
 
             LabelBomb2 = label(image:Bomb2 handle:HandleBomb2 height:1 width:1)
             {Grid.grid configure(LabelBomb2 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb2 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb2)}
 
             LabelBomb3 = label(image:Bomb3 handle:HandleBomb3 height:1 width:1)
             {Grid.grid configure(LabelBomb3 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb3 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb3)}
 
             LabelBomb4 = label(image:Bomb4 handle:HandleBomb4 height:1 width:1)
             {Grid.grid configure(LabelBomb4 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb4 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb4)}
 
             LabelBomb5 = label(image:Bomb5 handle:HandleBomb5 height:1 width:1)
             {Grid.grid configure(LabelBomb5 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb5 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb5)}
 
             LabelBomb6 = label(image:Bomb6 handle:HandleBomb6 height:1 width:1)
             {Grid.grid configure(LabelBomb6 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb6 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb6)}
 
             LabelBomb7 = label(image:Bomb7 handle:HandleBomb7 height:1 width:1)
             {Grid.grid configure(LabelBomb7 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb7 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb7)}
 
             LabelBomb8 = label(image:Bomb8 handle:HandleBomb8 height:1 width:1)
             {Grid.grid configure(LabelBomb8 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb8 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb8)}
 
             LabelBomb9 = label(image:Bomb9 handle:HandleBomb9 height:1 width:1)
             {Grid.grid configure(LabelBomb9 row:X+1 column:Y+1 sticky:wesn)}
             {HandleBomb9 'raise'()}
-            {Delay 83}
+            {Delay 70}
             {Grid.grid forget(HandleBomb9)}
+
+            LabelBomb10 = label(image:Bomb10 handle:HandleBomb10 height:1 width:1)
+            {Grid.grid configure(LabelBomb10 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb10 'raise'()}
+            {Delay 70}
+            {Grid.grid forget(HandleBomb10)}
+
+            LabelBomb11 = label(image:Bomb11 handle:HandleBomb11 height:1 width:1)
+            {Grid.grid configure(LabelBomb11 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb11 'raise'()}
+            {Delay 70}
+            {Grid.grid forget(HandleBomb11)}
+
+            LabelBomb12 = label(image:Bomb12 handle:HandleBomb12 height:1 width:1)
+            {Grid.grid configure(LabelBomb12 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleBomb12 'raise'()}
+            {Delay 70}
+            {Grid.grid forget(HandleBomb12)}
          end
    end
 
-   proc{Sonared ID Grid}
-		skip
-   end
+	local
+		proc{LineDroned Drone Grid N}
+			HandleDrone LabelDrone
+			in
+			LabelDrone = label(image:DroneIMG handle:HandleDrone)
+			case Drone
+			of drone(row X) then
+				if N < Input.nColumn then
+					{Grid.grid configure(LabelDrone row:X+1 column:N+1)}
+					{HandleDrone 'raise'()}
+					{Delay 250}
+					{Grid.grid forget(HandleDrone)}
+					{LineDroned Drone Grid N+1}
+				end
+			[] drone(column Y) then
+				if N < Input.nRow then
+					{Grid.grid configure(LabelDrone row:N+1 column:Y+1)}
+					{HandleDrone 'raise'()}
+					{Delay 250}
+					{Grid.grid forget(HandleDrone)}
+					{LineDroned Drone Grid N+1}
+				end
+			else
+				skip
+			end
+		end
+	in
+		proc{Droned Drone Grid}
+			{LineDroned Drone Grid 1}
+		end
+	end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -420,9 +471,9 @@ in
 			{Explosion ID Position Grid}
 			{TreatStream T Grid State}
 		[] drone(ID Drone)|T then
+			{Droned Drone Grid}
 			{TreatStream T Grid State}
 		[] sonar(ID)|T then
-			{Sonared ID Grid}
 			{TreatStream T Grid State}
 		[] _|T then
 			{TreatStream T Grid State}
