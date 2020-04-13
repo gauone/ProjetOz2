@@ -20,7 +20,6 @@ define
     ChangeInMap
     ChangeListinMap
     FireMine
-    SayMove
     SayMineOrMissileExplode
     SayPassingDrone
     SayPassingSonar
@@ -35,7 +34,7 @@ in
     /*Retourne le nouveau record apres avoir bind ID et Pos a leur valeurs.
     * Pos est une position ou il y a de l eau!*/
     fun {InitPosition ID Pos Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             ID = Charact.identite
             Pos={GeneratePosition}
@@ -88,7 +87,7 @@ in
     % Fonction qui choisit la direction a prendre, ajoute la derniere position a passage et rend une nouvelle position
     % Random dans un premier temps ;p /!\j'ajoute a passage la position precedente seulement
     fun {Move ID Position Direction Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             if Charact.divePermission then
                 ID = Charact.identite
@@ -148,20 +147,29 @@ in
     %cette fonction choisi l arme et si elle est suffisement load que
     %pour creer une nouvelle alors elle bind KindItem a la nouvelle arme sinon elle bind a null
     fun {ChargeItem ID KindItem Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             local
-                Weapons = [mine missile drone sonar]
-                Chosen
-            in
-                Chosen = {List.nth Weapons ( ({OS.rand} mod {List.length Weapons}) + 1 ) }
-                %quand tu modifieras pour que ce ne soit plus au hasard, tu devra juste changer le chosen avant cette ligne,
-                %le reste de ce qui est demande est fait ici en dessous
-                ID = Charact.identite
-                if 0 == ((Charact.Chosen+1) mod Input.Chosen) then KindItem = Chosen %on ne bind que si on a atteint le load de l arme
-                else KindItem = null
+                fun {Choose Weapons}
+                    local
+                        Chosen
+                    in 
+                        if Weapons == nil then KindItem = null Charact
+                        else 
+                            Chosen = {List.nth Weapons ( ({OS.rand} mod {List.length Weapons}) + 1 ) } 
+                            if Charact.Chosen >= Input.Chosen then {Choose {List.subtract Weapons Chosen}} %si load est deja au max on retire cet objet car je peux pas le choisir
+                            else 
+                                if Charact.Chosen + 1 >= Input.Chosen then KindItem = Chosen % nouvelle arme
+                                else KindItem = null
+                                end
+                                {Record.adjoinAt Charact Chosen (Charact.Chosen + 1)}
+                            end
+                        end
+                    end
                 end
-                {Record.adjoinAt Charact Chosen (Charact.Chosen + 1)}%j augmente de 1 le load dans les caracteristiques
+            in
+                ID = Charact.identite
+                {Choose [missile mine drone sonar]}
             end
         end
     end
@@ -176,7 +184,7 @@ in
     % Choisi ou pas de tirer si on tire on bind KindFire a ce qu on utilise et comment(direction cible ...)
     % Si on ne tire pas alors KindFire est bind a null (KindFire de type FireItem)
     fun {FireItem ID KindFire Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             ID = Charact.identite
             local
@@ -345,7 +353,7 @@ in
 
     %enonce If a mine was already placed before, the player may decide to make one exploded
     fun {FireMine ID Mine Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             ID = Charact.identite
 
@@ -354,33 +362,6 @@ in
                 {Record.adjoinAt Charact myMines Charact.myMines.2}
             else Mine = null
                 Charact
-            end
-        end
-    end
-
-
-    % Je vais faire en sorte qu on retienne la position de nos adversaires
-    %fct appellee que si je fais le AI
-    fun {SayMove ID Direction Charact}
-        if ID == Charact.identite then {System.show sayMoveDeMoiMeme(Direction)} Charact
-        else
-            local
-                Connu = {Arity Charact.posEnnemi}
-                IdNum = ID.id
-                Mouvements = [north#~1#0 south#1#0 east#0#1 west#0#~1]
-                DeltaX
-                DeltaY
-            in
-                if {List.member IdNum Connu} then
-                    for Mvt in Mouvements do
-                        case Mvt
-                        of Direction#I#J then DeltaX=I DeltaY=J
-                        else skip
-                        end
-                    end
-                    {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum (Charact.posEnnemi.1+DeltaX)#(Charact.posEnnemi.2+DeltaY)}}
-                else Charact %je connais pas sa position... Dans le meilleur des cas je peux reduire le champ de recherche. Pour le moment je fais rien
-                end
             end
         end
     end
@@ -473,7 +454,6 @@ in
             [] fireItem(ID KindFire) then {TreatStream T {FireItem ID KindFire Charact}}
             [] fireMine(ID Mine) then {TreatStream T {FireMine ID Mine Charact}}
             [] isDead(Answer) then Answer = (Charact.damage >= Input.maxDamage) {TreatStream T Charact}
-            % version Dummy:
             [] sayMove(ID Direction) then {TreatStream T Charact}
             [] saySurface(ID) then {TreatStream T Charact}
             [] sayCharge(ID KindItem) then {TreatStream T Charact}
@@ -483,11 +463,7 @@ in
             [] sayAnswerDrone(Drone ID Answer) then {TreatStream T Charact} %normalement il faut faire qqchose, mais la j ignore mon drone
             [] sayAnswerSonar(ID Answer) then {TreatStream T Charact} %idem que ligne precedente
             [] sayDeath(ID) then {TreatStream T Charact}
-            [] sayDamageTaken(ID Damage LifeLeft) then {TreatStream T Charact}%il faut juste que je le ajoute dans la memoire de l AI
-            /*% version AI: note:il faut changer --move chargeItem fireItem fireMine-- en + des fct non-dummy pour avoir un AI malin
-            [] sayMove(ID Direction) then {TreatStream T {SayMove ID Direction Charact}}
-            [] sayDeath(ID) then {TreatStream T {SayDeath ID Charact}}
-            */
+            [] sayDamageTaken(ID Damage LifeLeft) then {TreatStream T Charact}
             [] sayPassingDrone(Drone ID Answer)then {SayPassingDrone Drone ID Answer Charact} {TreatStream T Charact}
             [] sayPassingSonar(ID Answer) then {SayPassingSonar ID Answer Charact} {TreatStream T Charact}
             end

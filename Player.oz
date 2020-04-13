@@ -21,7 +21,14 @@ define
     ChangeListinMap
     FireMine
     SayMove
+    FusionList
+    FusionMap
+    DropLast
     MoveMapRight
+    MoveMapLeft
+    MoveMapDown
+    MoveMapUp
+    GetAllAtExactDist
     SayMineOrMissileExplode
     SayPassingDrone
     SayPassingSonar
@@ -32,6 +39,7 @@ define
     Enqueue
     Dequeue
     IsEmpty
+    SayDamageTaken
     TreatStream
     StartPlayer
 in
@@ -42,7 +50,7 @@ in
     /*Retourne le nouveau record apres avoir bind ID et Pos a leur valeurs.
     * Pos est une position ou il y a de l eau!*/
     fun {InitPosition ID Pos Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             ID = Charact.identite
             Pos={GeneratePosition}
@@ -95,7 +103,7 @@ in
     % Fonction qui choisit la direction a prendre, ajoute la derniere position a passage et rend une nouvelle position
     % Random dans un premier temps ;p /!\j'ajoute a passage la position precedente seulement
     fun {Move ID Position Direction Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             if Charact.divePermission then
                 ID = Charact.identite
@@ -155,20 +163,29 @@ in
     %cette fonction choisi l arme et si elle est suffisement load que
     %pour creer une nouvelle alors elle bind KindItem a la nouvelle arme sinon elle bind a null
     fun {ChargeItem ID KindItem Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             local
-                Weapons = [mine missile drone sonar]
-                Chosen
-            in
-                Chosen = {List.nth Weapons ( ({OS.rand} mod {List.length Weapons}) + 1 ) }
-                %quand tu modifieras pour que ce ne soit plus au hasard, tu devra juste changer le chosen avant cette ligne,
-                %le reste de ce qui est demande est fait ici en dessous
-                ID = Charact.identite
-                if 0 == ((Charact.Chosen+1) mod Input.Chosen) then KindItem = Chosen %on ne bind que si on a atteint le load de l arme
-                else KindItem = null
+                fun {Choose Weapons}
+                    local
+                        Chosen
+                    in 
+                        if Weapons == nil then KindItem = null Charact
+                        else 
+                            Chosen = {List.nth Weapons ( ({OS.rand} mod {List.length Weapons}) + 1 ) } 
+                            if Charact.Chosen >= Input.Chosen then {Choose {List.subtract Weapons Chosen}} %si load est deja au max on retire cet objet car je peux pas le choisir
+                            else 
+                                if Charact.Chosen + 1 >= Input.Chosen then KindItem = Chosen % nouvelle arme
+                                else KindItem = null
+                                end
+                                {Record.adjoinAt Charact Chosen (Charact.Chosen + 1)}
+                            end
+                        end
+                    end
                 end
-                {Record.adjoinAt Charact Chosen (Charact.Chosen + 1)}%j augmente de 1 le load dans les caracteristiques
+            in
+                ID = Charact.identite
+                {Choose [missile mine drone sonar]}
             end
         end
     end
@@ -183,7 +200,7 @@ in
     % Choisi ou pas de tirer si on tire on bind KindFire a ce qu on utilise et comment(direction cible ...)
     % Si on ne tire pas alors KindFire est bind a null (KindFire de type FireItem)
     fun {FireItem ID KindFire Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             ID = Charact.identite
             local
@@ -352,7 +369,7 @@ in
 
     %enonce If a mine was already placed before, the player may decide to make one exploded
     fun {FireMine ID Mine Charact}
-        if Charact.damage >= Input.maxDamage then ID = null
+        if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             local
                 Choice % faire exploser ou pas
@@ -389,35 +406,130 @@ in
                         else skip
                         end
                     end
-                    {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum (Charact.posEnnemi.1+DeltaX)#(Charact.posEnnemi.2+DeltaY)}}
+                    {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum (Charact.posEnnemi.IdNum.1+DeltaX)#(Charact.posEnnemi.IdNum.2+DeltaY)}}%%%%%%%%%%%%%%%%%%%%PLUS BON, MTN ON PARLE DE MATRICE ET PLUS DE POINTS POUR POSENNEMI
                 else Charact {FillList {FillList 1 Input.nColumn} Input.nRow}%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% a decaler
                 end
             end
         end
     end
 
-    % decale la matrice vers la droite-> mets des 0 et premiere colonne et la derniere colonne est supprimee
-    fun {MoveMapRight Map}
-        local
-            fun {DropLast Liste}
-                case Liste
-                of H|nil then nil
-                [] H|T then H|{DropLast T}
-                [] nil then nil
-                else raise wrongArgumentException end
-                end
-            end
-        in
-            case Map
-            of H|T then {DropLast 0|H}|{MoveMapRight T}
-            [] nil then nil
-            else raise wrongArgumentException end
-            end
+    % Fusionne 2 liste. C-a-d qu on renvoie une liste qui contient le max entre les 2 index /!\ Les liste doivent avoir la même longeur
+    fun {FusionList List1 List2}
+        case List1#List2
+        of (H1|T1)#(H2|T2) then
+            {Value.max H1 H2}|{FusionList T1 T2}
+        [] nil#nil then nil
+        else
+            raise listDeLenDifferentes(List1#List2) end
         end
     end
 
+    /*
+     * Renvoie une matrice qui contient le max entre les elements des 2 matrices au meme index
+     */
+    fun {FusionMap Map1 Map2}
+        case Map1#Map2
+        of (H1|T1)#(H2|T2) then {FusionList H1 H2}|{FusionMap T1 T2}
+        [] nil#nil then nil
+        else raise mapDeTailleDifferentesFusionMap end
+        end
+    end
+
+    % retourne la liste sans le dernier element de celle ci
+    fun {DropLast Liste}
+        case Liste
+        of H|nil then nil
+        [] H|T then H|{DropLast T}
+        [] nil then nil
+        else raise wrongArgumentExceptionDropLast end
+        end
+    end
+
+    % Decale la matrice vers la droite-> mets des 0 dans premiere colonne et la derniere colonne est supprimee puis superpose la matrice decalee et la matrice initiale
+    fun {MoveMapRight Map}
+        local
+            fun {InnerFun Map}
+                case Map
+                of H|T then {DropLast 0|H}|{InnerFun T}
+                [] nil then nil
+                else raise wrongArgumentExceptionMoveMapRight end
+                end
+            end
+        in
+            {FusionMap Map {InnerFun Map}}
+        end
+    end
+
+    % Decale la matrice vers la gauche-> la 1ere colonne est supprimee et la derniere est remplie de 0 puis superpose la matrice decalee et la matrice initiale
+    fun {MoveMapLeft Map}
+        local
+            fun {InnerFun Map}
+                case Map
+                of H|T then 
+                    {List.append H.2 [0] }|{InnerFun T}
+                [] nil then nil
+                else raise wrongArgumentExceptionMoveMapLeft end
+                end
+            end
+        in
+            {FusionMap Map {InnerFun Map}}
+        end
+    end
+
+    % Decale la matrice vers le bas-> mets des 0 dans premiere ligne et la derniere ligne est supprimee puis superpose la matrice decalee et la matrice initiale
     fun {MoveMapDown Map}
-        if {List.length Map }%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%JE SUIS ICI
+        local
+            fun {InnerFun Map}
+                if Map \= nil then
+                    {FillList 0 {List.length Map.1 }}|{DropLast Map}
+                else nil
+                end
+            end
+        in
+            {FusionMap Map {InnerFun Map}}
+        end
+    end
+
+    % Decale la matrice vers le haut-> mets des 0 dans derniere ligne et la premiere ligne est supprimee puis superpose la matrice decalee et la matrice initiale
+    fun {MoveMapUp Map}
+        local
+            fun {InnerFun Map}
+                if Map \= nil then
+                    {List.append Map.2 [{FillList 0 {List.length Map.1 }}] }
+                else nil
+                end
+            end
+        in
+            {FusionMap Map {InnerFun Map}}
+        end
+    end
+
+    /*
+     * Retourne toutes les <positions> (pt(x: y: )) a une distance "Distance" de Manhattan autour du point Position. Les points peuvent etre des iles mais pas outOfBound
+     * /!\ les points a distance plus petite ne sont pas pris en compte. On n a que la distance exacte.
+     */
+    fun {GetAllAtExactDist Position Distance NRow NColumn} %explication du fonctionnement: je calcule les pt a distance Distance au dessus en dessous a gauche et a doite puis j incremente les x et y de maniere a aller de l un a l autre
+        local
+            Delta = [1#1 1#~1 ~1#~1 ~1#1]
+            Stop = [pt(x:Position.x y:(Position.y+Distance)) pt(x:(Position.x+Distance) y:Position.y) pt(x:Position.x y:(Position.y-Distance)) pt(x:(Position.x-Distance) y:Position.y)]
+
+            fun {AddNewPos Pos Delta Stop}
+                case Delta
+                of H|T then 
+                    if Pos \= Stop.1 andthen Pos.x =< NRow andthen Pos.x > 0 andthen Pos.y =< NColumn andthen Pos.y >0 then
+                        Pos|{AddNewPos pt(x:(Pos.x+H.1) y:(Pos.y+H.2) ) Delta Stop}
+                    elseif Pos \= Stop.1 then
+                        {AddNewPos pt(x:(Pos.x+H.1) y:(Pos.y+H.2) ) Delta Stop}
+                    else
+                        {AddNewPos Pos T Stop.2}
+                    end
+                [] nil then nil
+                else raise wrongStructureExceptionGetAllAtExactDist end
+                end
+            end
+        in
+            {AddNewPos pt(x:(Position.x-Distance) y:Position.y) Delta Stop} %je commence mon tour par le point au dessus
+        end
     end
 
 
@@ -557,7 +669,7 @@ in
                 end
             end       
 
-            Path MyQueue NewMap
+            Path MyQueue
         in
             MyQueue = {NewQueue}
 
@@ -627,6 +739,41 @@ in
         end
     end
 
+
+    fun {SayDamageTaken ID Damage Charact}
+        local
+            IdNum = ID.id
+            PosList
+            BlankMap = {FillList {FillList 0 Input.nColumn} Input.nRow} %equivalent de NewMap
+            FinalMap
+
+            fun {GetAllAtExactDistListe Liste Distance NRow NColumn}
+                case Liste
+                of H|T then {List.append {GetAllAtExactDist H Distance NRow NColumn} {GetAllAtExactDistListe T Distance NRow NColumn}}
+                else nil
+                end
+            end
+
+        in
+            case (Charact.lastMissile)#(Charact.lastMineExplode)
+            of false#false then PosList = nil
+            [] false#(pt(x:X y:Y)) then PosList = [Charact.lastMineExplode]
+            [] (pt(x:X y:Y))#false then PosList = [Charact.lastMissile]
+            [] (pt(x:X1 y:Y1))#(pt(x:X2 y:Y2)) then PosList = [Charact.lastMissile Charact.lastMineExplode]
+            else raise sayDamageTakenLastMissileOrLastMineExplodeOfWrongType((Charact.lastMissile)#(Charact.lastMineExplode)) end
+            end
+
+            if Damage == 2 then
+                FinalMap = {ChangeListinMap PosList BlankMap 1}
+            else if Damage == 1 then
+                FinalMap = {ChangeListinMap {GetAllAtExactDistListe PosList 1 Input.nRow Input.nColumn} BlankMap 1}
+            else
+                raise unKnownDamageValue end
+            end
+            {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum FinalMap}}
+        end
+    end
+
     /*********************************************** 
     Lancement et traitement de la stream du player
     ***********************************************/
@@ -655,7 +802,7 @@ in
             [] sayAnswerDrone(Drone ID Answer) then {TreatStream T Charact} %normalement il faut faire qqchose, mais la j ignore mon drone
             [] sayAnswerSonar(ID Answer) then {TreatStream T Charact} %idem que ligne precedente
             [] sayDeath(ID) then {TreatStream T Charact}
-            [] sayDamageTaken(ID Damage LifeLeft) then {TreatStream T Charact}%il faut juste que je le ajoute dans la memoire de l AI
+            [] sayDamageTaken(ID Damage LifeLeft) then {TreatStream T {SayDamageTaken ID Damage Charact}}%il faut juste que je le ajoute dans la memoire de l AI
             /*% version AI: note:il faut changer --move chargeItem fireItem fireMine-- en + des fct non-dummy pour avoir un AI malin
             [] sayMove(ID Direction) then {TreatStream T {SayMove ID Direction Charact}}
             [] sayDeath(ID) then {TreatStream T {SayDeath ID Charact}}
@@ -676,7 +823,7 @@ in
         {NewPort Stream Port}
         thread
             {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() myMines:nil lastMissileLaunched:(~3#~3) lastMineExplode:(~3#~3) )}
-            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(2:matrice1 3:matrice2(1=possible 0=pas la)) lifeEnnemi:life(1:4 2:1) myMines:ListeDesMines)
+            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(IdNum1:matrice1 IdNum2:matrice2(1=possible 0=pas la)) lifeEnnemi:life(1:4 2:1) myMines:ListeDesMines)
         end
         Port
     end
