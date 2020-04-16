@@ -45,25 +45,25 @@ in
 
 %%%% Style of game %%%%
 
-   %IsTurnByTurn = true
-
    IsTurnByTurn = true
+
+   %IsTurnByTurn = false
 
 %%%% Description of the map %%%%
 
    NRow = 10
    NColumn = 10
 
-   Map = [[0 0 0 0 0 0 0 0 0 0 ]
+   Map = [[0 0 0 0 0 0 0 0 1 0 ]
           [0 1 1 1 0 0 0 0 0 0 ]
-          [0 0 0 0 0 0 1 1 0 0 ]
-          [0 0 0 0 0 1 1 0 0 0 ]
-          [0 0 0 1 1 1 1 0 0 0 ]
-          [0 0 0 0 0 0 0 0 0 0 ]
+          [0 0 0 1 0 0 1 1 0 0 ]
+          [0 1 0 0 0 1 1 0 0 0 ]
+          [0 0 0 1 1 1 1 0 0 1 ]
+          [0 1 0 0 1 0 0 0 0 0 ]
           [0 0 0 1 1 0 0 0 1 0 ]
-          [0 0 0 0 1 0 0 0 1 0 ]
-          [0 0 0 0 1 0 0 0 1 0 ]
-          [0 0 0 0 0 0 0 0 0 0 ]]
+          [0 1 0 0 1 0 1 0 1 0 ]
+          [0 0 1 0 1 0 0 0 1 0 ]
+          [0 0 0 0 0 0 1 0 0 0 ]]
 
 %%%% Players description %%%%
 
@@ -89,7 +89,7 @@ in
 
 %%%% Life %%%%
 
-   MaxDamage = 2
+   MaxDamage = 20
 
 %%%% Number of load for each item %%%%
 
@@ -102,8 +102,8 @@ in
 
    MinDistanceMine = 2
    MaxDistanceMine = 2
-   MinDistanceMissile = 3
-   MaxDistanceMissile = 5
+   MinDistanceMissile = 2
+   MaxDistanceMissile = 2
 
 %%%% Waiting time for the GUI between each effect %%%%
 

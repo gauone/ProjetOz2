@@ -384,13 +384,11 @@ in
             local
 
                 fun {ChoseItemAndCheckUtility Utilisable}
-                    if Utilisable == nil then {System.show 'j ai plus d arme'} KindFire = null Charact
+                    if Utilisable == nil then KindFire = null Charact
                     else
-                        {System.show 'j ai'#Utilisable}
                         local
                             FirePosition
                             GetAllMissile = {GetAllElemAtManhattanDistBetween Charact {Value.max Input.minDistanceMissile 2} Input.maxDistanceMissile Charact.mostAccurate}
-                            if GetAllMissile == nil then {System.show 'GetAllMissile == nil'} end
 
                         in
                             if {List.member sonar Utilisable} then
@@ -620,10 +618,8 @@ in
                 else
                     FirstChoice = {FindCommunPos Charact.myMines Charact.posEnnemi.(Charact.accurateIdNum)} % Charact.myMines est une liste de <positions> tandis que Charact.posEnnemi.(Charact.accurateIdNum) est une matrice ou nil
                     if FirstChoice \= false then
-                        {System.show 'First Choice in FireMine'}
                         Mine = FirstChoice
                     else
-                        {System.show 'Second Choice in FireMine'}
                         SecondChoice = {FindCommunPos Charact.myMines {MergeAllEnemyMat Charact} } % une matrice ou nil
                         if SecondChoice \= false then 
                             Mine = SecondChoice
@@ -652,19 +648,19 @@ in
             in
                 if {List.member IdNum Connu} then % Je prends la map je bouge la map je retire a nouveau les iles je retourne (les iles sont retiree pour la 2em fois dans les fcts MoveMap)
                     case Direction
-                    of north then {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {MoveMapUp Charact.posEnnemi.IdNum} }}
-                    [] south then {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {MoveMapDown Charact.posEnnemi.IdNum} }}
-                    [] west  then {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {MoveMapLeft Charact.posEnnemi.IdNum} }}
-                    [] east  then {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {MoveMapRight Charact.posEnnemi.IdNum} }}
+                    of north then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapUp    Charact.posEnnemi.IdNum} } lastMissileLaunched#false lastMineExplode#false] }
+                    [] south then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapDown  Charact.posEnnemi.IdNum} } lastMissileLaunched#false lastMineExplode#false] }
+                    [] west  then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapLeft  Charact.posEnnemi.IdNum} } lastMissileLaunched#false lastMineExplode#false] }
+                    [] east  then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapRight Charact.posEnnemi.IdNum} } lastMissileLaunched#false lastMineExplode#false] }
                     else raise diretionNotACrdinalPoint end
                     end
 
                 else %je cree une map de 1 je retire les iles je bouge la map je retire a nouveau les iles je retourne (les iles sont retiree pour la 2em fois dans les fcts MoveMap)
                     case Direction
-                    of north then {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {MoveMapUp {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } }}
-                    [] south then {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {MoveMapDown {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } }}
-                    [] west  then {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {MoveMapLeft {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } }}
-                    [] east  then {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {MoveMapRight {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } }}
+                    of north then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapUp    {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } } lastMissileLaunched#false lastMineExplode#false] }
+                    [] south then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapDown  {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } } lastMissileLaunched#false lastMineExplode#false] }
+                    [] west  then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapLeft  {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } } lastMissileLaunched#false lastMineExplode#false] }
+                    [] east  then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapRight {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } } lastMissileLaunched#false lastMineExplode#false] }
                     else raise diretionNotACrdinalPoint end
                     end
                 end
@@ -878,13 +874,14 @@ in
         if ID == Charact.identite then {System.show jeRecoisLInfoQueJeSuisMort(ID)} Charact
         else
             local
-                Connu = {List.append {Arity Charact.posEnnemi} {Arity Charact.lifeEnnemi}}
+                Connu = {Arity Charact.posEnnemi}
                 IdNum = ID.id
-                AIIntermediatRecord
             in
-                if {List.member IdNum Connu} then
-                    AIIntermediatRecord = {Record.adjoinAt Charact posEnnemi {Record.subtract Charact.posEnnemi IdNum}}%je retire le joueur de mes positions d ennemi
-                    {Record.adjoinAt AIIntermediatRecord lifeEnnemi {Record.subtract AIIntermediatRecord.lifeEnnemi IdNum}}% a ce nouveau record je fais la meme mais dans mes niveaux de vie
+                if {List.member IdNum Connu} andthen Charact.accurateIdNum == IdNum then
+                        {Record.adjoinList Charact [posEnnemi#{Record.subtract Charact.posEnnemi IdNum} accurateIdNum#_]}%je retire le joueur de mes positions d ennemi
+                elseif {List.member IdNum Connu} then
+                    {Record.adjoinAt Charact posEnnemi {Record.subtract Charact.posEnnemi IdNum}}%je retire le joueur de mes positions d ennemi
+                    
                 else
                     Charact
                 end
@@ -1102,11 +1099,8 @@ in
             [] sayMineExplode(ID Position Message) then {TreatStream T {SayMineOrMissileExplode Position Message Charact false}}
             [] sayAnswerDrone(Drone ID Answer) then {TreatStream T Charact} %normalement il faut faire qqchose, mais la j ignore mon drone
             [] sayAnswerSonar(ID Answer) then {TreatStream T Charact} %idem que ligne precedente
-            [] sayDeath(ID) then {TreatStream T Charact}
-            [] sayDamageTaken(ID Damage LifeLeft) then {TreatStream T {SayDamageTaken ID Damage Charact}}
-            /*
             [] sayDeath(ID) then {TreatStream T {SayDeath ID Charact}}
-            */
+            [] sayDamageTaken(ID Damage LifeLeft) then {TreatStream T {SayDamageTaken ID Damage Charact}}
             [] sayPassingDrone(Drone ID Answer)then {SayPassingDrone Drone ID Answer Charact} {TreatStream T Charact}
             [] sayPassingSonar(ID Answer) then {SayPassingSonar ID Answer Charact} {TreatStream T Charact}
             [] getCharact(Characteristic) then Characteristic=Charact {TreatStream T Charact}
@@ -1123,8 +1117,8 @@ in
     in
         {NewPort Stream Port}
         thread
-            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() myMines:nil lastMissileLaunched:pt(x:~10 y:~10) lastMineExplode:false sonarDone:false droneDone:false )}
-            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(IdNum1:matrice1 IdNum2:matrice2(1=possible 0=pas la)) lifeEnnemi:life(1:4 2:1) myMines:ListeDesMines)
+            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() myMines:nil lastMissileLaunched:pt(x:~10 y:~10) lastMineExplode:false sonarDone:false droneDone:false )}
+            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(IdNum1:matrice1 IdNum2:matrice2(1=possible 0=pas la)) myMines:ListeDesMines)
         end
         Port
     end
