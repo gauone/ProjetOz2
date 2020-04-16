@@ -11,7 +11,3 @@ This is a implementation of the famous game *Captain Sonoz* in the Oz language. 
 :warning: Rule 2: 
 
 > Always help your friends
-
-
-
-![LouisLabbe](LouisLabbe.png)

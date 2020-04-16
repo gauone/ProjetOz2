@@ -47,43 +47,43 @@ define
     *************************************/
 
    % C'est le floor car c'est la ou on peut bouger
-   WaterIMG = {QTk.newImage photo(url:'img/floor.png' height:0 width:0)}
+   WaterIMG = {QTk.newImage photo(url:'img/floor.gif' height:0 width:0)}
 
    % C'est les spikes car on ne peut pas y bouger
-   IslandIMG = {QTk.newImage photo(url:'img/spikes.png' height:0 width:0)}
+   IslandIMG = {QTk.newImage photo(url:'img/spikes.gif' height:0 width:0)}
 
-   WallIMG = {QTk.newImage photo(url:'img/wall.png' height:0 width:0)}
+   WallIMG = {QTk.newImage photo(url:'img/wall.gif' height:0 width:0)}
 
-   GreenPlayer = {QTk.newImage photo(url:'img/player_green.png' height:0 width:0)}
-   BluePlayer  = {QTk.newImage photo(url:'img/player_blue.png' height:0 width:0)}
-   RedPlayer   = {QTk.newImage photo(url:'img/player_red.png' height:0 width:0)}
-   BlackPlayer = {QTk.newImage photo(url:'img/player_black.png' height:0 width:0)}
-   WhitePlayer = {QTk.newImage photo(url:'img/player_white.png' height:0 width:0)}
-   YellowPlayer = {QTk.newImage photo(url:'img/player_yellow.png' height:0 width:0)}
+   GreenPlayer = {QTk.newImage photo(url:'img/player_green.gif' height:0 width:0)}
+   BluePlayer  = {QTk.newImage photo(url:'img/player_blue.gif' height:0 width:0)}
+   RedPlayer   = {QTk.newImage photo(url:'img/player_red.gif' height:0 width:0)}
+   BlackPlayer = {QTk.newImage photo(url:'img/player_black.gif' height:0 width:0)}
+   WhitePlayer = {QTk.newImage photo(url:'img/player_white.gif' height:0 width:0)}
+   YellowPlayer = {QTk.newImage photo(url:'img/player_yellow.gif' height:0 width:0)}
 
-   BluePt    = {QTk.newImage photo(url:'img/floor_blue.png'   height:0 width:0)}
-   RedPt     = {QTk.newImage photo(url:'img/floor_red.png'    height:0 width:0)}
-   GreenPt   = {QTk.newImage photo(url:'img/floor_green.png'  height:0 width:0)}
-   WhitePt   = {QTk.newImage photo(url:'img/floor_white.png'  height:0 width:0)}
-   BlackPt   = {QTk.newImage photo(url:'img/floor_black.png'  height:0 width:0)}
-   YellowPt  = {QTk.newImage photo(url:'img/floor_yellow.png'  height:0 width:0)}
+   BluePt    = {QTk.newImage photo(url:'img/floor_blue.gif'   height:0 width:0)}
+   RedPt     = {QTk.newImage photo(url:'img/floor_red.gif'    height:0 width:0)}
+   GreenPt   = {QTk.newImage photo(url:'img/floor_green.gif'  height:0 width:0)}
+   WhitePt   = {QTk.newImage photo(url:'img/floor_white.gif'  height:0 width:0)}
+   BlackPt   = {QTk.newImage photo(url:'img/floor_black.gif'  height:0 width:0)}
+   YellowPt  = {QTk.newImage photo(url:'img/floor_yellow.gif'  height:0 width:0)}
 
-   Bomb1  = {QTk.newImage photo(url:'img/bomb1.png' height:0 width:0)}
-   Bomb2  = {QTk.newImage photo(url:'img/bomb2.png' height:0 width:0)}
-   Bomb3  = {QTk.newImage photo(url:'img/bomb3.png' height:0 width:0)}
-   Bomb4  = {QTk.newImage photo(url:'img/bomb4.png' height:0 width:0)}
-   Bomb5  = {QTk.newImage photo(url:'img/bomb5.png' height:0 width:0)}
-   Bomb6  = {QTk.newImage photo(url:'img/bomb6.png' height:0 width:0)}
-   Bomb7  = {QTk.newImage photo(url:'img/bomb7.png' height:0 width:0)}
-   Bomb8  = {QTk.newImage photo(url:'img/bomb8.png' height:0 width:0)}
-   Bomb9  = {QTk.newImage photo(url:'img/bomb9.png' height:0 width:0)}
-   Bomb10 = {QTk.newImage photo(url:'img/bomb10.png' height:0 width:0)}
-   Bomb11 = {QTk.newImage photo(url:'img/bomb11.png' height:0 width:0)}
-   Bomb12 = {QTk.newImage photo(url:'img/bomb12.png' height:0 width:0)}
+   Bomb1  = {QTk.newImage photo(url:'img/bomb1.gif' height:0 width:0)}
+   Bomb2  = {QTk.newImage photo(url:'img/bomb2.gif' height:0 width:0)}
+   Bomb3  = {QTk.newImage photo(url:'img/bomb3.gif' height:0 width:0)}
+   Bomb4  = {QTk.newImage photo(url:'img/bomb4.gif' height:0 width:0)}
+   Bomb5  = {QTk.newImage photo(url:'img/bomb5.gif' height:0 width:0)}
+   Bomb6  = {QTk.newImage photo(url:'img/bomb6.gif' height:0 width:0)}
+   Bomb7  = {QTk.newImage photo(url:'img/bomb7.gif' height:0 width:0)}
+   Bomb8  = {QTk.newImage photo(url:'img/bomb8.gif' height:0 width:0)}
+   Bomb9  = {QTk.newImage photo(url:'img/bomb9.gif' height:0 width:0)}
+   Bomb10 = {QTk.newImage photo(url:'img/bomb10.gif' height:0 width:0)}
+   Bomb11 = {QTk.newImage photo(url:'img/bomb11.gif' height:0 width:0)}
+   Bomb12 = {QTk.newImage photo(url:'img/bomb12.gif' height:0 width:0)}
 
-   MineIMG = {QTk.newImage photo(url:'img/mine.png' height:0 width:0)}
+   MineIMG = {QTk.newImage photo(url:'img/mine.gif' height:0 width:0)}
 
-   DroneIMG = {QTk.newImage photo(url:'img/drone.png')}
+   DroneIMG = {QTk.newImage photo(url:'img/drone.gif')}
 
 
 

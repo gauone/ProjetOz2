@@ -392,7 +392,7 @@ define
                            {Send PlayerPort chargeItem(ChargeId ChargeItem)}
                            {Wait ChargeId}
                            {Wait ChargeItem}
-
+                           {System.show '-------------------- Pt.6 : Charged Item'#ChargeItem}
                            if(ChargeItem \= null) then
                               {Radio sayCharge(ChargeId ChargeItem)}
                            end

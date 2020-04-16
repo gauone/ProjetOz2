@@ -22,7 +22,7 @@ redotest : $(files)
 	/Applications/Mozart2.app/Contents/Resources/bin/ozengine FichierTestPlayer.ozf
 
 playeronly: $(files)
-	/Applications/Mozart2.app/Contents/Resources/bin/ozc -c ../Player.oz ../PlayerRandom.oz
+	/Applications/Mozart2.app/Contents/Resources/bin/ozc -c ../Player.oz
 	say "player compilé"
 
 main : $(files)

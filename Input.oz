@@ -47,7 +47,7 @@ in
 
    %IsTurnByTurn = true
 
-   IsTurnByTurn = false
+   IsTurnByTurn = true
 
 %%%% Description of the map %%%%
 
@@ -73,7 +73,7 @@ in
 
    NbPlayer = 3
    Players = [player1 player2 player3]
-   Colors = [red black green]
+   Colors = [red white green]
 
 %%%% Thinking parameters (only in simultaneous) %%%%
 
@@ -100,8 +100,8 @@ in
 
 %%%% Distances of placement %%%%
 
-   MinDistanceMine = 3
-   MaxDistanceMine = 5
+   MinDistanceMine = 2
+   MaxDistanceMine = 2
    MinDistanceMissile = 3
    MaxDistanceMissile = 5
 

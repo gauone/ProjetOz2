@@ -479,7 +479,7 @@ in
     in
         {NewPort Stream Port}
         thread
-            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() myMines:nil lastMissileLaunched:(~3#~3) lastMineExplode:(~3#~3) )}
+            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Gauthier') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() myMines:nil lastMissileLaunched:(~3#~3) lastMineExplode:(~3#~3) )}
             % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(2:3#4 3:1#1) lifeEnnemi:life(1:4 2:1) myMines:listeDesMines(1=Ile 9=Mine))
         end
         Port

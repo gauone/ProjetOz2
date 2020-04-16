@@ -78,6 +78,29 @@ define
         end
         {System.show fini}
     end
+    
+    fun {GetCharact}
+        local
+            Charact
+        in
+            {Send Port getCharact(Charact)}
+            {System.show getCharact}
+            {Wait Charact}
+            {System.show getCharact2}
+            Charact
+        end
+    end
+
 in
-    {TestRetrieving}
+    %{TestRetrieving}
+    local
+    ID Position
+    in
+    {Send Port initPosition(ID Position)}
+
+    {System.show {GetCharact}.posEnnemi}
+    {Send Port sayDamageTaken(ID 2 1)}%Id damage lifeleft
+    {System.show sended}
+    {System.show {GetCharact}.posEnnemi}
+    end
 end
