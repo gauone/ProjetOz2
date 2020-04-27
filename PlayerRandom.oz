@@ -32,7 +32,8 @@ in
     *************************************/
 
     /*Retourne le nouveau record apres avoir bind ID et Pos a leur valeurs.
-    * Pos est une position ou il y a de l eau!*/
+     * Pos est une position ou il y a de l eau!
+     */
     fun {InitPosition ID Pos Charact}
         if Charact.damage >= Input.maxDamage then ID = null Charact
         else
@@ -43,7 +44,7 @@ in
     end
 
 
-    % Retourne true si le point (X Y) est > 0. Si outOfBounds alors vrai aussi.
+    % Retourne true si le point de la Matrice (X Y) est > 0. Si outOfBounds alors vrai aussi.
     fun {DetectIn Matrice NRow NColumn X Y}
         if X > NRow orelse Y > NColumn orelse X =< 0 orelse Y =< 0 then true
         else

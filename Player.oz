@@ -56,7 +56,8 @@ in
     *************************************/
 
     /*Retourne le nouveau record apres avoir bind ID et Pos a leur valeurs.
-    * Pos est une position ou il y a de l eau!*/
+     * Pos est une position ou il y a de l eau!
+     */
     fun {InitPosition ID Pos Charact}
         if Charact.damage >= Input.maxDamage then ID = null Charact
         else
@@ -67,7 +68,7 @@ in
     end
 
 
-    % Retourne true si le point (X Y) est > 0. Si outOfBounds alors vrai aussi.
+    % Retourne true si le point (X Y) de la Matrice est > 0. Si outOfBounds alors vrai aussi.
     fun {DetectIn Matrice NRow NColumn X Y}
         if X > NRow orelse Y > NColumn orelse X =< 0 orelse Y =< 0 then true
         else
@@ -123,7 +124,8 @@ in
                     DivePermission
 
                     Mouvements = [north#~1#0 south#1#0 east#0#1 west#0#~1]
-
+                    
+                    % donne la direction qui serait choisie si on se deplacait en position Position en se basant sur la position dans charact.
                     fun {FindDirFromPos Position Charact Liste}
                         case Liste
                         of Mvt|T then
@@ -487,7 +489,7 @@ in
                 end
             end
 
-            %ertourne la matrice sans la premiere colonne et bin ToBind au nombre d elem > 1 dans celle ci
+            %retourne la matrice sans la premiere colonne et bin ToBind au nombre d elem > 1 dans celle ci
             fun {CountFirstCol Matrix Count ToBind}
                 case Matrix
                 of Ligne1|AutresLignes then
