@@ -3,4 +3,5 @@
 3) Aller dans le bon dossier : cd D:\Utilisateurs\Antoine\Documents\GitHub\ProjetOz2
 4) Compiler : ozc -c Input.oz PlayerManager.oz Player.oz GUI.oz Main.oz
 4)' Complier que la main : ozc -c Input.oz PlayerManager.oz Player.oz GUI.oz Main.oz
+4)'' Compiler tout les .oz : ozc -c *.oz
 5) Executer : ozengine Main.ozf

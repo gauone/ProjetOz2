@@ -422,6 +422,7 @@ define
                            [] missile(MissilePosition) then
 
                               {System.show '-------------------- Pt.7 : Missile'}
+                              %{Send GUIP missile(FireId MissilePosition)}
                               {Send GUIP explosion(FireId MissilePosition)}
 
                               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -730,6 +731,7 @@ define
                   [] missile(MissilePosition) then
 
                      {System.show '-------------------- Pt.9 : Missile : '#Id}
+                     %{Send GUIP missile(FireId MissilePosition)}
                      {Send GUIP explosion(FireId MissilePosition)}
 
                      for Port in PlayerPortList do
@@ -981,6 +983,8 @@ in
    else
       {StartSim}
    end
+
+   {Send GUIP endGame}
 
    {System.show '-------------------- Fermeture de la main'}
 

@@ -2,6 +2,8 @@ functor
 import
 	QTk at 'x-oz://system/wp/QTk.ozf'
 	Input
+	OS
+	System
 export
 	portWindow:StartWindow
 define
@@ -107,21 +109,21 @@ in
 		{Window show}
 
 		% configure rows and set headers
-		{Grid rowconfigure(1 minsize:50 weight:0 pad:0)}
+		{Grid rowconfigure(1 minsize:50 weight:0)}
 		for N in 1..NRow do
-			{Grid rowconfigure(N+1 minsize:50 weight:0 pad:0)}
+			{Grid rowconfigure(N+1 minsize:50 weight:0)}
 			{Grid configure({Label N} row:N+1 column:1 sticky:wesn)}
 		end
 		% configure columns and set headers
-		{Grid columnconfigure(1 minsize:50 weight:0 pad:0)}
+		{Grid columnconfigure(1 minsize:50 weight:0)}
 		for N in 1..NColumn do
-			{Grid columnconfigure(N+1 minsize:50 weight:0 pad:0)}
+			{Grid columnconfigure(N+1 minsize:50 weight:0)}
 			{Grid configure({Label N} row:1 column:N+1 sticky:wesn)}
 		end
 		% configure scoreboard
-		{GridScore rowconfigure(1 minsize:50 weight:0 pad:0)}
+		{GridScore rowconfigure(1 minsize:50 weight:0)}
 		for N in 1..(Input.nbPlayer) do
-			{GridScore columnconfigure(N minsize:50 weight:0 pad:0)}
+			{GridScore columnconfigure(N minsize:50 weight:0)}
 		end
 
 		{DrawMap Grid}
@@ -304,6 +306,12 @@ in
 	end
 
 	fun{RemovePlayer Grid WantedID State}
+
+		local Ret in
+			{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\dead.mp3' Ret}
+			{System.show Ret}
+		end
+
 		case State
 		of nil then nil
 		[] guiPlayer(id:ID score:HandleScore submarine:Handle mines:M path:P)|Next then
@@ -324,6 +332,12 @@ in
 	end
 
    proc{Explosion ID Position Grid}
+
+		local Ret in
+		{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\explosion.mp3' Ret}
+		{System.show Ret}
+		end
+
          local X Y HandleBomb1 HandleBomb2 HandleBomb3 HandleBomb4 HandleBomb5 HandleBomb6 HandleBomb7 HandleBomb8 HandleBomb9 HandleBomb10 HandleBomb11 HandleBomb12 LabelBomb1 LabelBomb2 LabelBomb3 LabelBomb4 LabelBomb5 LabelBomb6 LabelBomb7 LabelBomb8 LabelBomb9 LabelBomb10 LabelBomb11 LabelBomb12 in
             pt(x:X y:Y) = Position
             LabelBomb1 = label(image:Bomb1 handle:HandleBomb1 height:1 width:1)
@@ -398,7 +412,7 @@ in
             {Delay 70}
             {Grid.grid forget(HandleBomb12)}
          end
-   end
+    end
 
 	local
 		proc{LineDroned Drone Grid N}
@@ -410,7 +424,7 @@ in
 				if N < Input.nColumn then
 					{Grid.grid configure(LabelDrone row:X+1 column:N+1)}
 					{HandleDrone 'raise'()}
-					{Delay 250}
+					{Delay 100}
 					{Grid.grid forget(HandleDrone)}
 					{LineDroned Drone Grid N+1}
 				end
@@ -418,7 +432,7 @@ in
 				if N < Input.nRow then
 					{Grid.grid configure(LabelDrone row:N+1 column:Y+1)}
 					{HandleDrone 'raise'()}
-					{Delay 250}
+					{Delay 100}
 					{Grid.grid forget(HandleDrone)}
 					{LineDroned Drone Grid N+1}
 				end
@@ -448,7 +462,18 @@ in
 	proc{TreatStream Stream Grid State}
 		case Stream
 		of nil then skip
-		[] buildWindow|T then NewGrid in 
+		[] buildWindow|T then NewGrid in
+
+			% local Ret in
+			% 	{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\start_game.mp3' Ret}
+			% 	{System.show Ret}
+			% end
+
+			local Ret in
+				{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\play.mp3' Ret}
+				{System.show Ret}
+			end
+
 			NewGrid = {BuildWindow}
 			{TreatStream T NewGrid State}
 		[] initPlayer(ID Position)|T then NewState in
@@ -457,6 +482,12 @@ in
 		[] movePlayer(ID Position)|T then
 			{TreatStream T Grid {StateModification Grid ID State {MoveSubmarine Position}}}
 		[] lifeUpdate(ID Life)|T then
+
+			local Ret in
+				{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\ouh.mp3' Ret}
+				{System.show Ret}
+			end
+
 			{TreatStream T Grid {StateModification Grid ID State {UpdateLife Life}}}
 			{TreatStream T Grid State}
 		[] putMine(ID Position)|T then 
@@ -471,10 +502,30 @@ in
 			{Explosion ID Position Grid}
 			{TreatStream T Grid State}
 		[] drone(ID Drone)|T then
+
+			local Ret in
+				{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\drone.mp3' Ret}
+				{System.show Ret}
+			end
+
 			{Droned Drone Grid}
 			{TreatStream T Grid State}
 		[] sonar(ID)|T then
 			{TreatStream T Grid State}
+		[] endGame|T then
+
+			local Ret in
+				{Delay 2000}
+				{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\victory.mp3' Ret}
+				{System.show Ret}
+			end
+
+			local Ret in
+				{Delay 2000}
+				{OS.system 'taskkill /IM "vlc.exe" /F' Ret}
+				{System.show Ret}
+			end
+
 		[] _|T then
 			{TreatStream T Grid State}
 		end
