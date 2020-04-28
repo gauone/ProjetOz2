@@ -39,7 +39,11 @@ define
     GetAllAtExactDistListe
     SayMineOrMissileExplode
     SayPassingDrone
+    SayAnswerDrone
+    RemoveAllBut
+    KeepAllBut
     SayPassingSonar
+    SayAnswerSonar
     SayDeath
     FillList
     BFS
@@ -427,7 +431,7 @@ in
                     end
                 end
             in
-                {ChoseItemAndCheckUtility {WeaponAvailable Charact} } % {WeaponAvailable Charact} = liste du style [mine#quantiteDeMine missile#quantiteDeMissile ...] J ai garde ce type car ca peut etre utile quand on fera la version efficace
+                {ChoseItemAndCheckUtility {WeaponAvailable Charact} }
             end
         end
     end
@@ -654,7 +658,7 @@ in
                     [] south then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapDown  Charact.posEnnemi.IdNum} } lastMissileLaunched#false lastMineExplode#false] }
                     [] west  then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapLeft  Charact.posEnnemi.IdNum} } lastMissileLaunched#false lastMineExplode#false] }
                     [] east  then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapRight Charact.posEnnemi.IdNum} } lastMissileLaunched#false lastMineExplode#false] }
-                    else raise diretionNotACrdinalPoint end
+                    else raise diretionNotACardinalPoint end
                     end
 
                 else %je cree une map de 1 je retire les iles je bouge la map je retire a nouveau les iles je retourne (les iles sont retiree pour la 2em fois dans les fcts MoveMap)
@@ -663,7 +667,7 @@ in
                     [] south then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapDown  {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } } lastMissileLaunched#false lastMineExplode#false] }
                     [] west  then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapLeft  {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } } lastMissileLaunched#false lastMineExplode#false] }
                     [] east  then {Record.adjoinList Charact [posEnnemi#{Record.adjoinAt Charact.posEnnemi IdNum {MoveMapRight {RemoveIslandFromMap {FillList {FillList 1 Input.nColumn} Input.nRow} Input.map} } } lastMissileLaunched#false lastMineExplode#false] }
-                    else raise diretionNotACrdinalPoint end
+                    else raise diretionNotACardinalPoint end
                     end
                 end
             end
@@ -823,7 +827,6 @@ in
 
 
     % Retourne un nouveau Charact et bind Message dist>=2 ->0 damage Dist=1->1 Dist=0->2
-    % Il faudra prendre en compte IsMissile quand la fonction sera maligne
     fun {SayMineOrMissileExplode Position Message Charact IsMissile}
         case Position
         of pt(x:X y:Y) then
@@ -855,6 +858,85 @@ in
         end
     end
 
+    fun {SayAnswerDrone Drone ID Answer Charact}
+        if ID == null orelse ID == Charact.identite then Charact
+        else
+            local
+                IdNum = ID.id
+            in
+                case Drone
+                of drone(Dim Num) then
+                    if Answer == true then
+                        {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {RemoveAllBut Dim Num Charact.posEnnemi.IdNum} }  }
+                    else 
+                        {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {KeepAllBut Dim Num Charact.posEnnemi.IdNum} }  }
+                    end
+                else raise yourDroneIsNotCorrectInSayAnswerDrone end
+                end
+            end
+        end
+    end
+    
+    % retourne une nouvelle matrice avec tout a 0 sauf la Num ieme Dim (column ou row) Si Dim est un nombre alors la fonction sert au sonar et on garde donc la ligne et colonne passant par le pt (Dim Num)
+    fun {RemoveAllBut Dim Num Matrice}
+        local
+            %mets des Val partout dans la liste sauf a l index I. Acc doit etre 1
+            fun {KeepIeme I Acc Liste Val}% I=1 Acc=1 et Liste=[1 1] donne [1 0]
+                if Liste == nil then nil
+                elseif Acc == I then Liste.1|{KeepIeme I Acc+1 Liste.2 Val}
+                else
+                    Val|{KeepIeme I Acc+1 Liste.2 Val}
+                end
+            end
+
+        in
+            if Matrice == nil then nil
+            else
+                if Dim == column then
+                    {KeepIeme Num 1 Matrice.1 0}|{RemoveAllBut Dim Num Matrice.2}
+                elseif Dim == row then
+                    {KeepIeme Num 1 Matrice {FillList 0 Input.nColumn} }
+                else % on a alors un sonar normalement et on garde donc la croix de centre (Dim Num)
+                    if Dim \= 1 then
+                        {KeepIeme Num 1 Matrice.1 0}|{RemoveAllBut Dim-1 Num Matrice.2}
+                    else
+                        Matrice.1|{RemoveAllBut Dim-1 Num Matrice.2}
+                    end
+                end
+            end
+        end
+    end
+
+    % retourne une nouvelle matrice identique a Matrice sauf pour la Num ieme Dim qui est mise a 0
+    fun {KeepAllBut Dim Num Matrice}
+        local
+            %Mets le I eme elem de List a Val (Ieme en commencant par 1).
+            fun {ChangeElemInList I Val List}
+                if I =< 0 then raise outOfBoundInKeepAllBut end %utile si le y est trop petit
+                else
+                    case List
+                    of H|T then
+                        if I > 1 then H|{ChangeElemInList I-1 Val T}
+                        else Val|T
+                        end
+                    [] nil then raise outOfBoundInKeepAllBut end %utile si le y est trop petit
+                    end
+                end
+            end
+
+        in
+            if Matrice == nil then nil
+            else
+                if Dim == column then
+                    {ChangeElemInList Num 0 Matrice.1}|{KeepAllBut Dim Num Matrice.2}
+                else
+                    {ChangeElemInList Num {FillList 0 Input.nColumn} Matrice}
+                end
+            end
+        end
+    end
+
+
     %comme trick, je vais toujours envoyer les lignes si il y en a moins que de colonne si c'est l inverse :) (et je vais eviter de dire une ile)
     proc {SayPassingSonar ID Answer Charact}
         if Charact.damage >= Input.maxDamage then ID = null
@@ -866,6 +948,17 @@ in
                 if Input.nColumn > Input.nRow then Answer = pt(x:Charact.position.x y:Mensonge.y)
                 else Answer = pt(x:Mensonge.x y:Charact.position.y)
                 end
+            end
+        end
+    end
+
+    fun {SayAnswerSonar ID Answer Charact}
+        if ID == null orelse ID == Charact.identite then Charact
+        else
+            local
+                IdNum = ID.id
+            in
+                {Record.adjoinAt Charact posEnnemi {Record.adjoinAt Charact.posEnnemi IdNum {RemoveAllBut Answer.x Answer.y Charact.posEnnemi.IdNum} }  }
             end
         end
     end
@@ -1099,13 +1192,13 @@ in
             [] sayMinePlaced(ID) then {TreatStream T Charact}
             [] sayMissileExplode(ID Position Message) then {TreatStream T {SayMineOrMissileExplode Position Message Charact true}}
             [] sayMineExplode(ID Position Message) then {TreatStream T {SayMineOrMissileExplode Position Message Charact false}}
-            [] sayAnswerDrone(Drone ID Answer) then {TreatStream T Charact} %normalement il faut faire qqchose, mais la j ignore mon drone
-            [] sayAnswerSonar(ID Answer) then {TreatStream T Charact} %idem que ligne precedente
+            [] sayPassingDrone(Drone ID Answer)then {SayPassingDrone Drone ID Answer Charact} {TreatStream T Charact}
+            [] sayAnswerDrone(Drone ID Answer) then {TreatStream T {SayAnswerDrone Drone ID Answer Charact}}
+            [] sayPassingSonar(ID Answer) then {SayPassingSonar ID Answer Charact} {TreatStream T Charact}
+            [] sayAnswerSonar(ID Answer) then {TreatStream T {SayAnswerSonar ID Answer Charact}} %idem que ligne precedente
             [] sayDeath(ID) then {TreatStream T {SayDeath ID Charact}}
             [] sayDamageTaken(ID Damage LifeLeft) then {TreatStream T {SayDamageTaken ID Damage Charact}}
-            [] sayPassingDrone(Drone ID Answer)then {SayPassingDrone Drone ID Answer Charact} {TreatStream T Charact}
-            [] sayPassingSonar(ID Answer) then {SayPassingSonar ID Answer Charact} {TreatStream T Charact}
-            [] getCharact(Characteristic) then Characteristic=Charact {TreatStream T Charact}
+            %[] getCharact(Characteristic) then Characteristic=Charact {TreatStream T Charact} % A enlever pour la soumission
             end
         [] nil then {System.show 'Player s Stream ended -> see Player file'}
         else raise iLegalOptionExceptionInPaylerStream(Stream.1) end

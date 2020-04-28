@@ -11,7 +11,7 @@ in
 	fun{PlayerGenerator Kind Color ID}
 		case Kind
 		of player1 then {Player.portPlayer Color ID}
-		[] player2 then {Player.portPlayer Color ID}
+		[] player2 then {PlayerRandom.portPlayer Color ID}
 		[] player3 then {Player.portPlayer Color ID}
 
 		% of player6 then {PlayerBasicAI.portPlayer Color ID}
