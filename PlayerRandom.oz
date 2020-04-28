@@ -425,19 +425,10 @@ in
     in
         {NewPort Stream Port}
         thread
-            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Gauthier') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 myMines:nil )}
+            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Player030Random') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 myMines:nil )}
             % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 myMines:listeDesMines(1=Ile 9=Mine))
         end
         Port
     end
 
 end
-
-%TODO:
-/*
-Vérifier que le nom ne doit rien a voir avec le reste :p
-Changer la fonction Move qui est random pour le moment
-Changer FireItem car il y a des distance de Manhattan min et max pour mettre de mines ou missile en fait
-Tester les fcts say et ManhattanDist
-Vérifier de source autre qu un etudiant inconnu que type drone est bien drone(row <unXChoisi>)
-*/

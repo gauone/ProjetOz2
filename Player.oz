@@ -966,17 +966,20 @@ in
 
     % Efface le joueur de la mémoire de l AI
     fun {SayDeath ID Charact}
-        if ID == Charact.identite then {System.show jeRecoisLInfoQueJeSuisMort(ID)} Charact
+        if ID == Charact.identite then Charact
         else
             local
                 Connu = {Arity Charact.posEnnemi}
                 IdNum = ID.id
             in
-                if {List.member IdNum Connu} andthen Charact.accurateIdNum == IdNum then
-                        {Record.adjoinList Charact [posEnnemi#{Record.subtract Charact.posEnnemi IdNum} accurateIdNum#_]}%je retire le joueur de mes positions d ennemi
-                elseif {List.member IdNum Connu} then
-                    {Record.adjoinAt Charact posEnnemi {Record.subtract Charact.posEnnemi IdNum}}%je retire le joueur de mes positions d ennemi
-                    
+                if {List.member IdNum Connu} then %je retire le joueur de mes positions d ennemi
+                    if {Value.isFree Charact.accurateIdNum} then
+                        {Record.adjoinAt Charact posEnnemi {Record.subtract Charact.posEnnemi IdNum}}
+                    elseif Charact.accurateIdNum == IdNum then
+                        {Record.adjoinList Charact [posEnnemi#{Record.subtract Charact.posEnnemi IdNum} accurateIdNum#_]}
+                    else
+                        {Record.adjoinAt Charact posEnnemi {Record.subtract Charact.posEnnemi IdNum}}
+                    end
                 else
                     Charact
                 end
@@ -1212,19 +1215,10 @@ in
     in
         {NewPort Stream Port}
         thread
-            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Antoine') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() myMines:nil lastMissileLaunched:pt(x:~10 y:~10) lastMineExplode:false sonarDone:false droneDone:false )}
+            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Player030Malin') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() myMines:nil lastMissileLaunched:pt(x:~10 y:~10) lastMineExplode:false sonarDone:false droneDone:false accurateIdNum:_)}
             % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(IdNum1:matrice1 IdNum2:matrice2(1=possible 0=pas la)) myMines:ListeDesMines)
         end
         Port
     end
 
 end
-
-%TODO:
-/*
-Vérifier que le nom ne doit rien a voir avec le reste :p
-Changer la fonction Move qui est random pour le moment
-Changer FireItem car il y a des distance de Manhattan min et max pour mettre de mines ou missile en fait
-Tester les fcts say et ManhattanDist
-Vérifier de source autre qu un etudiant inconnu que type drone est bien drone(row <unXChoisi>)
-*/
