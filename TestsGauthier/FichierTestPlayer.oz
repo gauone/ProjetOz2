@@ -1,3 +1,4 @@
+% Attention pour que prendre la charact il faut reactiver le message getCharact dans le player
 functor
 import
     Player

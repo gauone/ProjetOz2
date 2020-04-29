@@ -17,13 +17,10 @@ define
     FireItem
     WhereToFire
     WeaponAvailable
-    ChangeInMap
-    ChangeListinMap
     FireMine
     SayMineOrMissileExplode
     SayPassingDrone
     SayPassingSonar
-    SayDeath
     TreatStream
     StartPlayer
 in
@@ -32,7 +29,8 @@ in
     *************************************/
 
     /*Retourne le nouveau record apres avoir bind ID et Pos a leur valeurs.
-    * Pos est une position ou il y a de l eau!*/
+     * Pos est une position ou il y a de l eau!
+     */
     fun {InitPosition ID Pos Charact}
         if Charact.damage >= Input.maxDamage then ID = null Charact
         else
@@ -43,7 +41,7 @@ in
     end
 
 
-    % Retourne true si le point (X Y) est > 0. Si outOfBounds alors vrai aussi.
+    % Retourne true si le point de la Matrice (X Y) est > 0. Si outOfBounds alors vrai aussi.
     fun {DetectIn Matrice NRow NColumn X Y}
         if X > NRow orelse Y > NColumn orelse X =< 0 orelse Y =< 0 then true
         else
@@ -197,7 +195,6 @@ in
                             Item
                             FirePosition
                         in
-                            %ici il faut changer pour que ce soit plus random ;p une maniere est de choisir l'item qui sait atteindre l ennemi avec sa portee propre
                             TupleItem = {List.nth Utilisable ( ({OS.rand} mod {List.length Utilisable}) + 1 ) } % du type mine#quantiteDeMine
                             Item = TupleItem.1 %/!\ du type mine
                             if Item == mine orelse Item == missile then
@@ -215,7 +212,7 @@ in
 
                                 [] missile then
                                     KindFire = missile(FirePosition)
-                                    {Record.adjoinList Charact [missile#{Value.max (Charact.missile - Input.missile) 0} lastMissileLaunched#FirePosition]}%rappel FirePosition de type <position>
+                                    {Record.adjoinList Charact [missile#{Value.max (Charact.missile - Input.missile) 0} ]}%rappel FirePosition de type <position>
 
                                 [] sonar then
                                     KindFire = sonar
@@ -314,52 +311,21 @@ in
         end
     end
 
-    /*
-     * Fonction qui prends une valeur une position (pt(x:... y:...) ou X#Y) et une map et qui retourne la map avec la valeur mise a Val a la position
-     */
-    fun {ChangeInMap PT Map Val}
-        local
-            %Mets le I eme elem de List a Val (Ieme en commencant par 1).
-            fun {ChangeElemInList I Val List}
-                if I =< 0 then raise outOfBoundInchangeInMap end %utile si le y est trop petit
-                else
-                    case List
-                    of H|T then
-                        if I > 1 then H|{ChangeElemInList I-1 Val T}
-                        else Val|T
-                        end
-                    [] nil then raise outOfBoundInchangeInMap end %utile si le y est trop petit
-                    end
-                end
-            end
-        in
-            case PT
-            of pt(x:X y:Y) then {ChangeElemInList X {ChangeElemInList Y Val {List.nth Map X}} Map} %si le x est trop grand ou petit alors Nth renvoie une Missing else clause
-            [] X#Y then {ChangeElemInList X {ChangeElemInList Y Val {List.nth Map X}} Map}
-            end
-        end
-    end
-
-    /*
-     * fonctionnement similaire a ChangeInMap sauf que ce prends une liste de positions (de type X#Y ou pt(x: y: )
-     */
-    fun {ChangeListinMap PosList Map Val}
-        case PosList
-        of H|T then {ChangeListinMap T {ChangeInMap H Map Val} Val}
-        else Map
-        end
-    end
-
 
     %enonce If a mine was already placed before, the player may decide to make one exploded
+    % strategie si la derniere mine cree (soit la premiere de la liste) ne me blesse pas alors je la tire
     fun {FireMine ID Mine Charact}
         if Charact.damage >= Input.maxDamage then ID = null Charact
         else
             ID = Charact.identite
 
             if Charact.myMines \= nil then
-                Mine = Charact.myMines.1 %si j ai une mine je la tire
-                {Record.adjoinAt Charact myMines Charact.myMines.2}
+                if {Number.abs Charact.myMines.1.x-Charact.position.x} + {Number.abs Charact.myMines.1.y-Charact.position.y} >=2 then
+                    Mine = Charact.myMines.1
+                    {Record.adjoinAt Charact myMines Charact.myMines.2}
+                else Mine = null
+                    Charact
+                end
             else Mine = null
                 Charact
             end
@@ -416,26 +382,6 @@ in
     end
 
 
-    % Efface le joueur de la mémoire de l AI
-    fun {SayDeath ID Charact}
-        if ID == Charact.identite then {System.show jeRecoisLInfoQueJeSuisMort(ID)} Charact
-        else
-            local
-                Connu = {List.append {Arity Charact.posEnnemi} {Arity Charact.lifeEnnemi}}
-                IdNum = ID.id
-                AIIntermediatRecord
-            in
-                if {List.member IdNum Connu} then
-                    AIIntermediatRecord = {Record.adjoinAt Charact posEnnemi {Record.subtract Charact.posEnnemi IdNum}}%je retire le joueur de mes positions d ennemi
-                    {Record.adjoinAt AIIntermediatRecord lifeEnnemi {Record.subtract AIIntermediatRecord.lifeEnnemi IdNum}}% a ce nouveau record je fais la meme mais dans mes niveaux de vie
-                else
-                    Charact
-                end
-            end
-        end
-    end
-
-    
     /*********************************************** 
     Lancement et traitement de la stream du player
     ***********************************************/
@@ -479,19 +425,10 @@ in
     in
         {NewPort Stream Port}
         thread
-            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Gauthier') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos() lifeEnnemi:life() myMines:nil lastMissileLaunched:(~3#~3) lastMineExplode:(~3#~3) )}
-            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 posEnnemi:pos(2:3#4 3:1#1) lifeEnnemi:life(1:4 2:1) myMines:listeDesMines(1=Ile 9=Mine))
+            {TreatStream Stream characteristic(identite:id(id:ID color:Color name:'Player030Random') position:pt(x:~1 y:~1) passage:nil divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 myMines:nil )}
+            % Contenu type de characteristic(position:pt(x:2 y:3) passage:2#3|2#4|1#4|nil identite:id(color:blue id:1 name:'Antoine') divePermission:true mine:0 missile:0 drone:0 sonar:0 damage:0 myMines:listeDesMines(1=Ile 9=Mine))
         end
         Port
     end
 
 end
-
-%TODO:
-/*
-Vérifier que le nom ne doit rien a voir avec le reste :p
-Changer la fonction Move qui est random pour le moment
-Changer FireItem car il y a des distance de Manhattan min et max pour mettre de mines ou missile en fait
-Tester les fcts say et ManhattanDist
-Vérifier de source autre qu un etudiant inconnu que type drone est bien drone(row <unXChoisi>)
-*/
