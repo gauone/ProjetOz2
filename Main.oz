@@ -362,11 +362,12 @@ define
                         * Le sous-marin reste un total de tours Input.turnSurface a la surface avant de continuer
                         */
 
-                        {System.show '-------------------- Pt.4'}
+                        {System.show '-------------------- Pt.4 : Surface'}
 
                         if(MoveDir == surface) then
                            {Radio saySurface(MoveId)}
                            {Send GUIP surface(MoveId)}
+                           {Send GUIP movePlayer(MoveId MovePos)} % Pour avoir la position pour l'animation surface
                            {TBTActions T {AdjoinListAt SJL Id (Input.turnSurface-1)} VJL Id+1}
                         else
 
@@ -655,11 +656,12 @@ define
                * L'informations que ce joueur a fait surface est diffusee par la radio.
                */
 
-               {System.show '-------------------- Pt.4 : '#Id}
+               {System.show '-------------------- Pt.4 : Surface'#Id}
 
                if(MoveDir == surface) then
                   {Radio saySurface(MoveId)}
                   {Send GUIP surface(MoveId)}
+                  {Send GUIP movePlayer(MoveId MovePos)} % Pour avoir la position pour l'animation surface
                   {Delay (Input.turnSurface*1000)}
                   {SActions PP Id}
                else

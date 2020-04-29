@@ -36,6 +36,7 @@ define
 	Explosion
 	Sonared
 	Droned
+	Surfaced
 
 	UpdateLife
 
@@ -82,6 +83,14 @@ define
    Bomb10 = {QTk.newImage photo(url:'img/bomb10.gif' height:0 width:0)}
    Bomb11 = {QTk.newImage photo(url:'img/bomb11.gif' height:0 width:0)}
    Bomb12 = {QTk.newImage photo(url:'img/bomb12.gif' height:0 width:0)}
+
+   Surface0  = {QTk.newImage photo(url:'img/surface0.gif' height:0 width:0)}
+   Surface1  = {QTk.newImage photo(url:'img/surface1.gif' height:0 width:0)}
+   Surface2  = {QTk.newImage photo(url:'img/surface2.gif' height:0 width:0)}
+   Surface3  = {QTk.newImage photo(url:'img/surface3.gif' height:0 width:0)}
+   Surface4  = {QTk.newImage photo(url:'img/surface4.gif' height:0 width:0)}
+   Surface5  = {QTk.newImage photo(url:'img/surface5.gif' height:0 width:0)}
+   Surface6  = {QTk.newImage photo(url:'img/surface6.gif' height:0 width:0)}
 
    MineIMG = {QTk.newImage photo(url:'img/mine.gif' height:0 width:0)}
 
@@ -414,6 +423,61 @@ in
          end
     end
 
+
+	proc{Surfaced ID Position Grid}
+
+		local Ret in
+		{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\surface.mp3' Ret}
+		{System.show Ret}
+		end
+
+         local X Y HandleSurface0 HandleSurface1 HandleSurface2 HandleSurface3 HandleSurface4 HandleSurface5 HandleSurface6 LabelSurface0 LabelSurface1 LabelSurface2 LabelSurface3 LabelSurface4 LabelSurface5 LabelSurface6 in
+            pt(x:X y:Y) = Position
+
+			LabelSurface0 = label(image:Surface0 handle:HandleSurface0 height:1 width:1)
+            {Grid.grid configure(LabelSurface0 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleSurface0 'raise'()}
+            {Delay 100}
+            {Grid.grid forget(HandleSurface0)}
+
+            LabelSurface1 = label(image:Surface1 handle:HandleSurface1 height:1 width:1)
+            {Grid.grid configure(LabelSurface1 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleSurface1 'raise'()}
+            {Delay 100}
+            {Grid.grid forget(HandleSurface1)}
+
+            LabelSurface2 = label(image:Surface2 handle:HandleSurface2 height:1 width:1)
+            {Grid.grid configure(LabelSurface2 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleSurface2 'raise'()}
+            {Delay 100}
+            {Grid.grid forget(HandleSurface2)}
+
+            LabelSurface3 = label(image:Surface3 handle:HandleSurface3 height:1 width:1)
+            {Grid.grid configure(LabelSurface3 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleSurface3 'raise'()}
+            {Delay 100}
+            {Grid.grid forget(HandleSurface3)}
+
+            LabelSurface4 = label(image:Surface4 handle:HandleSurface4 height:1 width:1)
+            {Grid.grid configure(LabelSurface4 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleSurface4 'raise'()}
+            {Delay 100}
+            {Grid.grid forget(HandleSurface4)}
+
+            LabelSurface5 = label(image:Surface5 handle:HandleSurface5 height:1 width:1)
+            {Grid.grid configure(LabelSurface5 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleSurface5 'raise'()}
+            {Delay 100}
+            {Grid.grid forget(HandleSurface5)}
+
+            LabelSurface6 = label(image:Surface6 handle:HandleSurface6 height:1 width:1)
+            {Grid.grid configure(LabelSurface6 row:X+1 column:Y+1 sticky:wesn)}
+            {HandleSurface6 'raise'()}
+            {Delay 150}
+            {Grid.grid forget(HandleSurface6)}
+         end
+    end
+
 	local
 		proc{LineDroned Drone Grid N}
 			HandleDrone LabelDrone
@@ -460,14 +524,17 @@ in
 	end
 
 	proc{TreatStream Stream Grid State}
+		{System.show '-------------------- GUI TreatStream'}
 		case Stream
 		of nil then skip
 		[] buildWindow|T then NewGrid in
 
-			% local Ret in
-			% 	{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\start_game.mp3' Ret}
-			% 	{System.show Ret}
-			% end
+			local Ret in
+				{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\start_game.mp3' Ret}
+				{System.show Ret}
+			end
+
+			{Delay 3500}
 
 			local Ret in
 				{OS.system 'start vlc --qt-start-minimized --play-and-exit D:\\Utilisateurs\\Antoine\\Documents\\GitHub\\ProjetOz2\\snd\\play.mp3' Ret}
@@ -494,8 +561,17 @@ in
 			{TreatStream T Grid {StateModification Grid ID State {DrawMine Position}}}
 		[] removeMine(ID Position)|T then
 			{TreatStream T Grid {StateModification Grid ID State {RemoveMine Position}}}
-		[] surface(ID)|T then
-			{TreatStream T Grid {StateModification Grid ID State RemovePath}}
+		[] surface(ID)|T then % Pour avoir la position
+			{Delay 100}
+			case T of
+			movePlayer(MoveID Position)|T2 then
+				{System.show '-------------------- GUI with Surfaced'}
+				{Surfaced ID Position Grid}
+				{TreatStream T2 Grid {StateModification Grid ID State RemovePath}}
+			else
+				{System.show '-------------------- GUI without Surface'}
+				{TreatStream T Grid {StateModification Grid ID State RemovePath}}
+			end
 		[] removePlayer(ID)|T then
 			{TreatStream T Grid {RemovePlayer Grid ID State}}
 		[] explosion(ID Position)|T then
